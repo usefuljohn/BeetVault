@@ -19,6 +19,7 @@
     import { useWalletStore } from '@/stores/walletStore.js';
     import { useAccountStore } from '@/stores/accountStore.js';
     import { blockchainRequest } from '@/lib/blockchainRequestHelper.js';
+    import { cryptoErrorKey } from '@/lib/cryptoErrors.js';
     import router from '../router/index.js';
     import { blockchains } from "../config/config.js";
     import { useProcessing } from '../composables/useProcessing.js';
@@ -160,14 +161,19 @@
     }
 
     function _handleError(err) {
-        if (err == "invalid") {
+        const cryptoKey = cryptoErrorKey(err);
+        if (cryptoKey) {
+            window.electron.notify(t(cryptoKey));
+        } else if (err == "invalid") {
             window.electron.notify(t("common.invalid_password"));
         } else if (err == "update_failed") {
             window.electron.notify(t("common.update_failed"));
-        } else if (err.key) {
+        } else if (err && err.key) {
             window.electron.notify(t(`common.${err.key}`));
+        } else if (err && err.message) {
+            window.electron.notify(err.message);
         } else {
-            window.electron.notify(err.toString());
+            window.electron.notify(err ? err.toString() : "Error");
         }
     }
 
@@ -176,7 +182,7 @@
         saving.value = true;
         startProcessing();
 
-        if (!accounts_to_import.value) {
+        if (!accounts_to_import.value || !accounts_to_import.value.length) {
             window.electron.notify(t(`common.addAccount.none_selected`));
             saving.value = false;
             stopProcessing();
@@ -197,32 +203,32 @@
             return;
         }
 
-        for (let account of accounts_to_import.value) {
-            if (!userHasWallet.value || createNewWallet.value) {
-                try {
-                    await walletStore.saveWallet({
-                        walletname: walletname.value,
-                        password: password.value,
-                        walletdata: account.account,
-                        tier: securityTier.value
-                    });
-                } catch (error) {
-                    console.log(error);
-                    _handleError(error);
-                    saving.value = false;
-                    password.value = "";
-                    confirmPassword.value = "";
-                    stopProcessing();
-                    return;
-                }
-            } else {
+        if (!userHasWallet.value || createNewWallet.value) {
+            try {
+                await walletStore.saveWallet({
+                    walletname: walletname.value,
+                    password: password.value,
+                    accounts: accounts_to_import.value.map(x => x.account),
+                    tier: securityTier.value
+                });
+            } catch (error) {
+                console.error("saveWallet failed:", error);
+                _handleError(error);
+                saving.value = false;
+                password.value = "";
+                confirmPassword.value = "";
+                stopProcessing();
+                return;
+            }
+        } else {
+            for (let account of accounts_to_import.value) {
                 account.password = password.value;
                 account.walletname = walletname.value;
 
                 try {
                     await accountStore.addAccount(account);
                 } catch (error) {
-                    console.log(error);
+                    console.error("addAccount failed:", error);
                     _handleError(error);
                     saving.value = false;
                     password.value = "";

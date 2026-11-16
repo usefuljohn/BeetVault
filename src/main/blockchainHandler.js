@@ -858,13 +858,25 @@ export async function handleBlockchainRequest(event, arg) {
     }
 
     if (methods.includes('decryptBackup')) {
-        const { filePath, pass } = arg;
+        const { fileData, filePath, pass } = arg;
 
         let _data;
-        try {
-            _data = await readFileSecure(filePath);
-        } catch (error) {
-            console.log({ error });
+        if (fileData) {
+            if (fileData.length > MAX_BACKUP_FILE_SIZE) {
+                console.log('Backup file too large');
+            } else {
+                try {
+                    _data = Buffer.isBuffer(fileData) ? fileData : Buffer.from(fileData);
+                } catch (error) {
+                    console.log({ error });
+                }
+            }
+        } else if (filePath) {
+            try {
+                _data = await readFileSecure(filePath);
+            } catch (error) {
+                console.log({ error });
+            }
         }
 
         if (_data) {

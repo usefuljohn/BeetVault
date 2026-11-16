@@ -312,9 +312,13 @@ export default class Antelope extends BlockchainAPI {
 
         if (validPermissions.length > 0) {
             console.log("Key is valid");
+            const permNames = validPermissions.map((perm) => String(perm.perm_name));
+            // Only report key types that have a translation label
+            const _keyType = ["owner", "active"].find((name) => permNames.includes(name)) || null;
             return {
                 fetchedAccount,
                 publicKey,
+                _keyType,
             };
         }
 

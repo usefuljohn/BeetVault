@@ -142,7 +142,8 @@
 
         if (blockchainResponse && blockchainResponse.verifyAccount) {
             console.log("Account verified");
-            detectedKeyType.value = blockchainResponse.verifyAccount._keyType || null;
+            // verifyAccount responds with { account, token }
+            detectedKeyType.value = blockchainResponse.verifyAccount.account?._keyType || null;
 
             // Clear plaintext key from memory
             authorities.privateKey = null;
@@ -157,7 +158,9 @@
             emit('imported', [{
                 account: {
                     accountName: accountname.value,
-                    accountID: blockchainResponse.verifyAccount.id,
+                    // Name-addressed chains (Hive, Antelope) use the account name as ID;
+                    // Hive's numeric account.id must not be used here.
+                    accountID: accountname.value,
                     chain: props.chain,
                     keys: { _vaultToken: blockchainResponse.verifyAccount.token },
                     keyType: detectedKeyType.value

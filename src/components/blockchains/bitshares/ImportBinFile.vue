@@ -95,11 +95,14 @@ import { Spinner } from '@/components/ui/ui/spinner';
             let blockchainResponse;
             try {
                 inProgress.value = true;
+                const arrayBuffer = await wallet_file.value.arrayBuffer();
+                const fileData = new Uint8Array(arrayBuffer);
                 blockchainResponse = await blockchainRequest({
                     methods: ["decryptBackup"],
                     location: 'importBinFile',
                     chain: props.chain,
-                    filePath: wallet_file.value.path,
+                    fileData: fileData,
+                    filePath: wallet_file.value ? wallet_file.value.path : undefined,
                     pass: bin_file_password.value
                 });
             } catch (error) {

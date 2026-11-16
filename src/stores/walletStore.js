@@ -113,6 +113,25 @@ export const useWalletStore = defineStore('wallet', {
                 accounts: accounts.map(x => x.accountID)
             };
 
+            let _encrypted;
+            try {
+                _encrypted = await window.electron.encryptAndStore({
+                    data: JSON.stringify(accounts),
+                    password: hashPassword(payload.password),
+                    tier: tier
+                });
+            } catch (error) {
+                console.log({error});
+                throw (error && error.message) || 'encrypt_failure';
+            }
+
+            await BeetDB.wallets_encrypted.put({
+                id: walletid,
+                data: _encrypted
+            });
+
+            // Written only after encryption succeeds, so a failure leaves no
+            // public wallet record without its encrypted data
             await BeetDB.wallets_public.put(newwallet);
             const wallets = await BeetDB.wallets_public.toArray();
 
@@ -126,23 +145,6 @@ export const useWalletStore = defineStore('wallet', {
             };
             this.hasWallet = true;
             this.walletlist = wallets;
-
-            let _encrypted;
-            try {
-                _encrypted = await window.electron.encryptAndStore({
-                    data: JSON.stringify(accounts),
-                    password: hashPassword(payload.password),
-                    tier: tier
-                });
-            } catch (error) {
-                console.log({error});
-                throw 'encrypt_failure';
-            }
-
-            await BeetDB.wallets_encrypted.put({
-                id: walletid,
-                data: _encrypted
-            });
 
             // Set the seed for this wallet
             try {
@@ -163,17 +165,79 @@ export const useWalletStore = defineStore('wallet', {
                 throw 'uuid_failure';
             }
 
+            const tier = payload.tier || "medium";
+            const rawAccounts = payload.accounts || (payload.walletdata ? [payload.walletdata] : []);
+
+            const processedAccounts = [];
+            for (const acc of rawAccounts) {
+                const accountCopy = JSON.parse(JSON.stringify(acc));
+                const keys = accountCopy.keys;
+
+                if (keys && keys._vaultToken) {
+                    let encryptedKeys;
+                    try {
+                        encryptedKeys = await window.electron.encryptPendingKeys({
+                            token: keys._vaultToken,
+                            password: hashPassword(payload.password),
+                            tier: tier
+                        });
+                    } catch (error) {
+                        console.error('encryptPendingKeys failed for account', accountCopy.accountName, error);
+                        throw error.message || error || 'Encryption failure';
+                    }
+                    accountCopy.keys = encryptedKeys;
+                } else if (keys) {
+                    const keyTypes = Object.keys(keys);
+                    for (let i = 0; i < keyTypes.length; i++) {
+                        const keytype = keyTypes[i];
+                        let _encrypted;
+                        try {
+                            _encrypted = await window.electron.encryptAndStore({
+                                data: keys[keytype],
+                                password: hashPassword(payload.password),
+                                tier: tier
+                            });
+                        } catch (error) {
+                            console.error('encryptAndStore failed for key', keytype, error);
+                            throw error.message || error || 'Encryption failure';
+                        }
+                        accountCopy.keys[keytype] = _encrypted;
+                    }
+                }
+                processedAccounts.push(accountCopy);
+            }
+
             const newwallet = {
                 id: walletid,
                 name: payload.walletname,
-                tier: payload.tier || "medium",
-                accounts: [{
-                    accountID: payload.walletdata.accountID ? payload.walletdata.accountID : payload.walletdata.accountName,
-                    accountName: payload.walletdata.accountName,
-                    chain: payload.walletdata.chain
-                }]
+                tier: tier,
+                accounts: processedAccounts.map(acc => ({
+                    accountID: acc.accountID ? acc.accountID : acc.accountName,
+                    accountName: acc.accountName,
+                    chain: acc.chain
+                }))
             };
 
+            // Encrypt the entire wallet accounts array
+            let _encryptedWalletData;
+            try {
+                _encryptedWalletData = await window.electron.encryptAndStore({
+                    data: JSON.stringify(processedAccounts),
+                    password: hashPassword(payload.password),
+                    tier: tier
+                });
+            } catch (error) {
+                console.error('encryptAndStore failed for wallet data:', error);
+                throw error.message || error || 'Encryption failure';
+            }
+
+            await BeetDB.wallets_encrypted.put({
+                id: walletid,
+                data: _encryptedWalletData
+            });
+
+            // Written only after encryption succeeds, so a failure leaves no
+            // public wallet record without its encrypted data
             await BeetDB.wallets_public.put(newwallet);
             const wallets = await BeetDB.wallets_public.toArray();
 
@@ -188,64 +252,15 @@ export const useWalletStore = defineStore('wallet', {
             this.hasWallet = true;
             this.walletlist = wallets;
 
-            let keys = payload.walletdata.keys;
-            const tier = payload.tier || "medium";
-
-            // If keys contain a vault token, encrypt via main process
-            if (keys._vaultToken) {
-                let encryptedKeys;
-                try {
-                    encryptedKeys = await window.electron.encryptPendingKeys({
-                        token: keys._vaultToken,
-                        password: hashPassword(payload.password),
-                        tier: tier
-                    });
-                } catch (error) {
-                    console.log({error});
-                    throw 'Encryption failure';
-                }
-                payload.walletdata.keys = encryptedKeys;
-            } else {
-                // Non-vaulted keys: encrypt individually
-                const keyTypes = Object.keys(keys);
-                for (let i = 0; i < keyTypes.length; i++) {
-                    const keytype = keyTypes[i];
-                    let _encrypted;
-                    try {
-                        _encrypted = await window.electron.encryptAndStore({
-                            data: payload.walletdata.keys[keytype],
-                            password: hashPassword(payload.password),
-                            tier: tier
-                        });
-                    } catch (error) {
-                        console.log({error});
-                        throw 'Encryption failure';
-                    }
-
-                    payload.walletdata.keys[keytype] = _encrypted;
-                }
-            }
-
-            // Encrypt the entire wallet data blob
-            let _encryptedWalletData;
+            // Set the seed for this wallet
             try {
-                _encryptedWalletData = await window.electron.encryptAndStore({
-                    data: JSON.stringify(payload.walletdata),
-                    password: hashPassword(payload.password),
-                    tier: tier
-                });
+                await window.electron.setSeedFromPassword({password: hashPassword(payload.password)});
             } catch (error) {
                 console.log({error});
-                throw 'Encryption failure';
             }
 
-            await BeetDB.wallets_encrypted.put({
-                id: walletid,
-                data: _encryptedWalletData
-            });
-
             this.wallet = newwallet;
-            useAccountStore().loadAccounts([payload.walletdata]);
+            useAccountStore().loadAccounts(processedAccounts);
         },
         async saveAccountToWallet(payload) {
             const accountStore = useAccountStore();
