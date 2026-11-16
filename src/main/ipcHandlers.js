@@ -7,7 +7,7 @@ import { hexToBytes } from '@noble/hashes/utils.js';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { hmac } from '@noble/hashes/hmac.js';
 import { validateSender, validateMainSender } from './securityGuards.js';
-import { encrypt, decrypt } from '../lib/crypto.js';
+import { encrypt, decrypt, cryptoEvents } from '../lib/crypto.js';
 import {
     createModal,
     createReceipt,
@@ -68,6 +68,15 @@ export function registerIPCHandlers({
     getSignatureFn,
 }) {
     const chainNodes = getChainNodes();
+
+    // Warn the renderer once when Argon2id has to run in the main process
+    cryptoEvents.removeAllListeners('slow-path');
+    cryptoEvents.on('slow-path', (info) => {
+        const win = getMainWindow ? getMainWindow() : null;
+        if (win && !win.isDestroyed()) {
+            win.webContents.send('cryptoSlowPath', info);
+        }
+    });
 
     /**
      * Converts a UTF-8 buffer to its hexadecimal representation.

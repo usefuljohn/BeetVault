@@ -2,6 +2,7 @@
     import { ref, computed } from 'vue';
     import { useI18n } from 'vue-i18n';
     import { hashPassword } from '../lib/utils.js';
+    import { cryptoErrorKey } from '../lib/cryptoErrors.js';
     import { useWalletStore } from '@/stores/walletStore.js';
     import router from '../router/index.js';
 
@@ -114,6 +115,10 @@
         } catch (error) {
             console.log(error);
             backupPass.value = "";
+            const cryptoKey = cryptoErrorKey(error);
+            if (cryptoKey) {
+                walletStore.notifyUser({notify: "request", message: t(cryptoKey)});
+            }
             return;
         }
     }

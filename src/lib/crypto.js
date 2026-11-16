@@ -18,8 +18,11 @@ import { randomBytes, utf8ToBytes } from "@noble/ciphers/utils.js";
 import { hkdf } from "@noble/hashes/hkdf.js";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { hmac } from "@noble/hashes/hmac.js";
+import { argon2id } from "@noble/hashes/argon2.js";
 import { Worker } from "worker_threads";
 import path from "path";
+import fs from "fs";
+import { EventEmitter } from "events";
 
 const WORKER_PATH = path.join(__dirname, "lib", "argon-worker.mjs");
 
@@ -54,50 +57,183 @@ const textDecoder = new TextDecoder();
  */
 
 /**
+ * Runs Argon2id synchronously in the current process.
+ * Used only as a fallback when the worker cannot start (see {@link deriveKey}).
+ *
+ * @param {Uint8Array} passwordBytes
+ * @param {Uint8Array} saltBytes
+ * @param {ArgonParams} params
+ * @returns {Uint8Array}
+ */
+function deriveKeyDirect(passwordBytes, saltBytes, params) {
+    const key = argon2id(passwordBytes, saltBytes, params);
+    if (!key || key.length !== 32) {
+        throw new Error(`Argon2id produced invalid key: length=${key?.length}`);
+    }
+    return new Uint8Array(key);
+}
+
+/**
+ * Largest Argon2id memory cost (KiB) the in-process fallback will run when
+ * creating new ciphertext. Matches the `medium` tier (128 MiB). Decrypting
+ * existing data above this still falls back, so wallets stay unlockable.
+ * @type {number}
+ */
+const FALLBACK_MAX_MEMORY_KIB = 2 ** 17;
+
+/**
+ * Error carrying a stable code. The code is also the start of the message,
+ * because errors crossing `ipcMain.handle` reach the renderer as text only.
+ */
+class ArgonError extends Error {
+    /**
+     * @param {"ARGON_WORKER_FAILED"|"ARGON_FALLBACK_REFUSED"} code
+     * @param {string} [detail]
+     */
+    constructor(code, detail) {
+        super(detail ? `${code}: ${detail}` : code);
+        this.name = "ArgonError";
+        this.code = code;
+    }
+}
+
+/**
+ * Emits `slow-path` with `{ memoryKiB, purpose, reason }` the first time the
+ * in-process fallback runs in a session, so the UI can warn the user.
+ * @type {EventEmitter}
+ */
+const cryptoEvents = new EventEmitter();
+
+/** Set once the worker fails to load; later calls skip the spawn attempt. */
+let workerUnavailable = false;
+
+/** Whether the `slow-path` event has already been emitted this session. */
+let slowPathReported = false;
+
+/**
+ * Runs the in-process fallback after the worker could not start.
+ *
+ * @param {Uint8Array} passwordBytes
+ * @param {Uint8Array} saltBytes
+ * @param {ArgonParams} params
+ * @param {"encrypt"|"decrypt"} purpose
+ * @param {string} reason - Why the worker was unavailable (for logs/UI).
+ * @returns {Uint8Array}
+ * @throws {ArgonError} ARGON_FALLBACK_REFUSED when creating ciphertext above the cap.
+ */
+function fallback(passwordBytes, saltBytes, params, purpose, reason) {
+    if (purpose === "encrypt" && params.m > FALLBACK_MAX_MEMORY_KIB) {
+        throw new ArgonError(
+            "ARGON_FALLBACK_REFUSED",
+            `worker unavailable (${reason}); ${params.m} KiB exceeds in-process cap`
+        );
+    }
+    console.error(`[crypto] Argon2id worker unavailable (${reason}); deriving in-process`);
+    if (!slowPathReported) {
+        slowPathReported = true;
+        cryptoEvents.emit("slow-path", { memoryKiB: params.m, purpose, reason });
+    }
+    return deriveKeyDirect(passwordBytes, saltBytes, params);
+}
+
+/**
  * Derive a 32-byte master key using Argon2id in a worker thread.
  *
- * Spawns a one-shot worker that runs Argon2id synchronously, posts the
- * derived key back as a transferable buffer, then closes. The main process
- * is never blocked.
+ * Spawns a one-shot worker from the unpacked worker file so the main process
+ * is never blocked. Only when the worker never loads (file missing, spawn
+ * throws, or an error before its `{ ready: true }` message) does it fall back to in-process
+ * derivation, capped for new ciphertext (see {@link FALLBACK_MAX_MEMORY_KIB}).
+ * Failures after the worker has started are rejected, never retried
+ * in-process: that would block the main process without the worker's
+ * resource limits.
  *
  * @param {string|Uint8Array} password - Password or passphrase to derive from.
  * @param {Uint8Array} salt - 32-byte CSPRNG salt.
  * @param {ArgonParams} params - Argon2id parameters (t, m, p).
+ * @param {"encrypt"|"decrypt"} [purpose="decrypt"] - Whether new ciphertext
+ *   is being created; only `encrypt` is subject to the fallback cap.
  * @returns {Promise<Uint8Array>} Derived 32-byte master key.
- * @throws {Error} If the worker errors or exits without posting a message.
+ * @throws {ArgonError} ARGON_WORKER_FAILED if the worker fails after starting,
+ *   or ARGON_FALLBACK_REFUSED if the capped fallback refuses.
  */
-function deriveKey(password, salt, params) {
-    return new Promise((resolve, reject) => {
-        let settled = false;
-        const worker = new Worker(WORKER_PATH, {
+function deriveKey(password, salt, params, purpose = "decrypt") {
+    const passwordBytes = typeof password === "string"
+        ? utf8ToBytes(password)
+        : new Uint8Array(password);
+    const saltBytes = new Uint8Array(salt);
+
+    const runFallback = (reason) => {
+        workerUnavailable = true;
+        try {
+            return Promise.resolve(fallback(passwordBytes, saltBytes, params, purpose, reason));
+        } catch (error) {
+            return Promise.reject(error);
+        }
+    };
+
+    if (workerUnavailable) {
+        return runFallback("unavailable earlier this session");
+    }
+
+    const workerPath = WORKER_PATH.replace("app.asar", "app.asar.unpacked");
+    if (!fs.existsSync(workerPath)) {
+        return runFallback("worker file missing");
+    }
+
+    let worker;
+    try {
+        worker = new Worker(workerPath, {
             workerData: {
-                password: typeof password === "string" ? password : Array.from(password),
-                salt: Array.from(salt),
+                password: Array.from(passwordBytes),
+                salt: Array.from(saltBytes),
                 params
             },
             resourceLimits: {
                 maxOldGenerationSizeMb: WORKER_MAX_OLD_SPACE_MB
             }
         });
-        worker.on("message", (message) => {
-            settled = true;
-            if (message && message.success === false) {
-                reject(new Error("Argon2id worker failed: " + (message.error || "unknown error")));
-            } else if (message && message.buffer) {
-                resolve(new Uint8Array(message.buffer));
-            } else {
-                reject(new Error("Worker posted unexpected message format"));
-            }
-        });
-        worker.on("error", (err) => {
-            settled = true;
-            reject(err);
-        });
-        worker.on("exit", (code) => {
+    } catch (spawnError) {
+        return runFallback("spawn failed: " + spawnError.message);
+    }
+
+    return new Promise((resolve, reject) => {
+        let settled = false;
+        let started = false;
+        const finish = (fn) => (...args) => {
             if (!settled) {
-                reject(new Error("Worker exited with code " + code + " without posting result"));
+                settled = true;
+                fn(...args);
+            }
+        };
+
+        const onResult = finish((message) => {
+            if (message && message.buffer) {
+                resolve(new Uint8Array(message.buffer));
+            } else if (message && message.success === false) {
+                reject(new ArgonError("ARGON_WORKER_FAILED", message.error || "unknown error"));
+            } else {
+                reject(new ArgonError("ARGON_WORKER_FAILED", "unexpected message format"));
             }
         });
+        // `online` fires before ESM imports resolve, so readiness comes from
+        // the worker's own message once its imports have loaded
+        worker.on("message", (message) => {
+            if (message && message.ready === true) {
+                started = true;
+            } else {
+                onResult(message);
+            }
+        });
+        worker.on("error", finish((err) => {
+            if (started) {
+                reject(new ArgonError("ARGON_WORKER_FAILED", err.message));
+            } else {
+                runFallback("load error: " + err.message).then(resolve, reject);
+            }
+        }));
+        worker.on("exit", finish((code) => {
+            reject(new ArgonError("ARGON_WORKER_FAILED", `exited with code ${code} without result`));
+        }));
     });
 }
 
@@ -164,7 +300,7 @@ export async function encrypt(plaintext, passphrase, tier = DEFAULT_TIER) {
     const salt = randomBytes(SALT_LENGTH);
     const nonce = randomBytes(NONCE_LENGTH);
     const nonceWrapped = randomBytes(NONCE_LENGTH);
-    const MK = await deriveKey(passphrase, salt, params);
+    const MK = await deriveKey(passphrase, salt, params, "encrypt");
 
     const KEK = hkdf(sha256, MK, undefined, utf8ToBytes("beet:v4:kek"), 32);
     const COMMIT_KEY = hkdf(sha256, MK, undefined, utf8ToBytes("beet:v4:commit"), 32);
@@ -368,7 +504,7 @@ export async function encryptBatch(items, passphrase, tier = DEFAULT_TIER) {
     }
 
     const salt = randomBytes(SALT_LENGTH);
-    const MK = await deriveKey(passphrase, salt, params);
+    const MK = await deriveKey(passphrase, salt, params, "encrypt");
     const { KEK, COMMIT_KEY } = deriveKeysFromMaster(MK);
 
     const results = {};
@@ -497,4 +633,4 @@ export async function decryptWithCache(ciphertextBase64, passphrase, cache) {
     return textDecoder.decode(plainTextBytes);
 }
 
-export { deriveKey, TIERS, DEFAULT_TIER, randomBytes };
+export { deriveKey, cryptoEvents, ArgonError, TIERS, DEFAULT_TIER, randomBytes };

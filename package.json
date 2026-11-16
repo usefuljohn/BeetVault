@@ -24,6 +24,10 @@
       "node_modules/**/*",
       "package.json"
     ],
+    "asarUnpack": [
+      "app/lib/argon-worker.mjs",
+      "node_modules/@noble/**"
+    ],
     "directories": {
       "buildResources": "resources"
     },

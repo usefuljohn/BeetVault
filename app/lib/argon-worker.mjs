@@ -4,8 +4,13 @@
  * Runs Argon2id (RFC 9106) in a dedicated worker thread so the Electron main
  * process never blocks during the memory-hard derivation (64-512 MiB, <1-40s).
  *
- * The worker receives its input via workerData, derives the key synchronously,
- * posts the result back as a transferable ArrayBuffer, then exits cleanly.
+ * The worker receives its input via workerData, posts `{ ready: true }` once
+ * its imports have loaded, derives the key synchronously, posts the result
+ * back as a transferable ArrayBuffer, then exits cleanly.
+ *
+ * The ready message is what lets the main process tell a worker that could
+ * not load (missing or broken dependencies) from one that failed while
+ * running: Node's `online` event fires before ESM imports are resolved.
  *
  * This file MUST have a .mjs extension because it uses ESM import syntax and
  * the project's package.json does not set "type": "module". Node.js loads
@@ -20,6 +25,9 @@ import { argon2id } from "@noble/hashes/argon2.js";
 import { utf8ToBytes } from "@noble/ciphers/utils.js";
 
 const { password, salt, params } = workerData;
+
+// Module body only runs after every import above resolved
+parentPort.postMessage({ ready: true });
 
 try {
     const passwordBytes = typeof password === "string"

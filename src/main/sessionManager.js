@@ -481,8 +481,8 @@ export async function encryptPendingKeys(event, arg) {
     try {
         return await encryptBatch(items, password, tier || 'medium');
     } catch (error) {
-        console.log({ error });
-        throw new Error('Encryption failure');
+        console.error('[sessionManager] encryptPendingKeys error:', error);
+        throw new Error('Encryption failure: ' + (error.message || error));
     }
 }
 
@@ -790,7 +790,8 @@ export async function unlockWallet(event, arg) {
         });
     } catch (error) {
         console.log({ error, location: 'unlockWallet.decrypt' });
-        throw new Error('Wallet decryption failed');
+        // Keep Argon2id codes so the renderer can tell a broken worker from a wrong password
+        throw new Error(error && error.code ? `Wallet decryption failed: ${error.code}` : 'Wallet decryption failed');
     }
 
     return decryptedWallet;
@@ -820,8 +821,8 @@ export async function encryptAndStore(event, arg) {
     try {
         encrypted = await encrypt(data, password, tier || 'medium');
     } catch (error) {
-        console.log({ error, location: 'encryptAndStore.encrypt' });
-        throw new Error('Encryption failed');
+        console.error('[sessionManager] encryptAndStore error:', error);
+        throw new Error('Encryption failed: ' + (error.message || error));
     }
 
     return encrypted;

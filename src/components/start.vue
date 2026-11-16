@@ -10,6 +10,7 @@
 
     import { useWalletStore } from '@/stores/walletStore.js';
     import router from '../router/index.js';
+    import { cryptoErrorKey } from '../lib/cryptoErrors.js';
     import { useProcessing } from '../composables/useProcessing.js';
 
     const { startProcessing, stopProcessing } = useProcessing();
@@ -71,11 +72,16 @@
                 walletpass.value = "";
                 router.replace("/dashboard");
             })
-            .catch(() => {
-                passincorrect.value = "is-invalid";
+            .catch((error) => {
                 unlocking.value = false;
                 stopProcessing();
                 walletpass.value = "";
+                const cryptoKey = cryptoErrorKey(error);
+                if (cryptoKey) {
+                    window.electron.notify(t(cryptoKey));
+                    return;
+                }
+                passincorrect.value = "is-invalid";
                 window.electron.notify(t('common.start.invalid_password'));
             });
     }
