@@ -54,14 +54,14 @@ async function buildBtsRawDeeplink(operations) {
   };
 
   const encoded = encodeURIComponent(JSON.stringify(request));
-  return `rawbeetvault://api/?chain=BTS&request=${encoded}`;
+  return `rawbeetvault://api/?request=${encoded}`;
 }
 ```
 
 Render the result as a normal link — the OS hands it to BeetVault:
 
 ```html
-<a href="rawbeetvault://api/?chain=BTS&request=...">Broadcast with BeetVault</a>
+<a href="rawbeetvault://api/?request=...">Broadcast with BeetVault</a>
 ```
 
 ## Key Details
@@ -74,4 +74,4 @@ Render the result as a normal link — the OS hands it to BeetVault:
 ## See Also
 
 - [Raw Deeplink Overview](./overview.md) — envelope, protocols, capacity limits, security
-- [TOTP Deeplink — BTS / Graphene](../totp/bts.md) — encrypted alternative
+- [JSON File — BTS / Graphene](../json-file/bts.md) — same envelope, no URL length limit

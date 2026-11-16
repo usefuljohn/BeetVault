@@ -85,5 +85,4 @@ writeFileSync("transaction.json", JSON.stringify(file, null, 2));
 ## See Also
 
 - [JSON File Overview](./overview.md) — format, when to use, cross-method comparison
-- [Raw Deeplink — BTS / Graphene](../raw/bts.md) — URL-based alternative
-- [TOTP Deeplink — BTS / Graphene](../totp/bts.md) — encrypted alternative
+- [QR Code — BTS / Graphene](../qr/bts.md) — air-gapped or cross-device alternative

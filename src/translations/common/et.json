@@ -7,7 +7,9 @@
         "reconnect": "Ühendage uuesti",
         "empty": "Kontol saldod puuduvad",
         "connecting": "Ühenduse loomine plokiahelaga",
-        "error": "Plokiahelaga ei saanud ühendust luua"
+        "error": "Plokiahelaga ei saanud ühendust luua",
+        "asset_name": "Asset",
+        "balance": "Balance"
     },
     "nodes": {
         "prompt": "Valige sõlm, millega ühenduse luua",
@@ -46,34 +48,11 @@
         "invalidPassword": "Vale taastatud rahakoti parool",
         "duplicate": "Sama nimega rahakott on juba olemas, katkestades rahakoti taastamise"
     },
-    "raw": {
-        "label": "Toores süvalingi leht",
-        "desc": "See leht töötleb sissetulevaid süvalinkide viipasid ilma ajatundliku krüptimiseta.",
-        "promptFailure": "Toores sügavlink lükati tagasi. ",
-        "exit": "Välju süvalingi lehelt"
-    },
-    "totp": {
-        "label": "Ajaliselt piiratud ja krüptitud süvalingi viibaleht",
-        "desc": "See leht töötleb sissetulevaid süvalinkide viipasid, mis on krüpteeritud ajatundlikul viisil.",
-        "promptFailure": "TOTP-sügavlink lükati tagasi. ",
-        "prompt": "Valige allpool soovitud toimingud",
-        "chosen": "valitud toimingud",
-        "request": "Küsi pääsukoodi",
-        "failed": "Sissetulev TOTP-taotlus nurjus. ",
-        "default": "Ebapiisavad toimingud",
-        "time": "Aega jäänud",
-        "exit": "Välju TOTP-lehelt",
-        "save": "Salvesta",
-        "unsupported": "Vabandust, TOTP-d selle ahela jaoks veel ei toetata.",
-        "warning": "Ärge jagage ülaltoodud koodi kellegagi",
-        "inProgress": "Süvalinki töödeldakse"
-    },
     "chosenScope": {
         "title": {
             "local": "Kas soovite konfigureerida skannitavate JSON-failide ulatust?",
             "qr": "Kas soovite konfigureerida skannitavate QR-koodide ulatust?",
-            "rawLink": "Kas soovite konfigureerida sissetulevate toores sügavlinkide ulatust?",
-            "totp": "Kas soovite konfigureerida sissetulevate süvalinkide ulatust?"
+            "rawLink": "Kas soovite konfigureerida sissetulevate toores sügavlinkide ulatust?"
         },
         "yes": "Jah – kohandage ulatust",
         "no": "Ei – lubage kõik toimingud"
@@ -125,15 +104,24 @@
         "progress": "Kohaliku faili töötlemine",
         "unsupported": "Vabandust, see kett ei toeta veel kohalikku failituge.",
         "promptSuccess": "Skaneeritud toimingu edastamine õnnestus",
-        "promptFailure": "Midagi läks skannitud failiga valesti"
+        "promptFailure": "Midagi läks skannitud failiga valesti",
+        "errors": {
+            "tooLarge": "The selected file is too large to be a transaction file.",
+            "invalidJson": "The selected file is not valid JSON.",
+            "invalidFormat": "The file is missing required fields (id, payload.chain, payload.method or payload.params).",
+            "wrongChain": "The file is for a different chain than the one currently selected.",
+            "unsupportedMethod": "The file requests a method this wallet does not support.",
+            "invalidTransaction": "The transaction inside the file could not be parsed.",
+            "outsideScope": "No operation in the file is within the scope you selected.",
+            "notCompleted": "The transaction was declined or could not be broadcast."
+        }
     },
     "actionBar": {
         "Home": "Kodu",
         "AddAccount": "Lisa konto",
-        "TOTPDeeplink": "TOTP süvalink",
         "JSONDeeplink": "JSON süvalink",
-        "RawDeeplink": "Toores süvalink",
         "QRCodes": "QR-koodid",
+        "RawDeeplink": "Toores süvalink",
         "SignMessage": "Allkirjasta sõnum",
         "VerifyMessage": "Kinnita sõnum",
         "Settings": "Seaded",
@@ -182,7 +170,8 @@
             "noResultTerminal": "Lõpptulemust ei tagastatud",
             "insufficientKeyAuthority": "Ebapiisav võtmevoliõigus",
             "insufficientKeyAuthorityDesc": "Teie imporditud võtme tüüp ({keyType}) ei saa sooritada taotletud toiminguid: {error}. Palun importeerige kõrgema taseme võtmega (aktiivne või omanik) konto selle tehingu jaoks."
-        }
+        },
+        "loadError": "Error: Unable to load prompt."
     },
     "abHome": "Kodu",
     "abNew": "Uus",
@@ -341,16 +330,12 @@
             "troubleshooting": "Troubleshooting",
             "faq": "FAQ",
             "deeplinks": "Deeplinks",
-            "deeplinksTotp": "TOTP",
-            "deeplinksRaw": "Raw",
             "deeplinksQr": "QR Code",
             "deeplinksJsonFile": "JSON File",
             "deeplinksOverview": "Overview",
             "deeplinksBts": "BTS / Graphene",
             "deeplinksAntelope": "Antelope",
             "deeplinksHive": "Hive",
-            "totpDeeplink": "TOTP Deeplink",
-            "rawDeeplink": "Raw Deeplink",
             "qrCode": "QR Code Deeplink",
             "jsonFileDeeplink": "JSON File Deeplink",
             "signMessage": "Sign Message",
@@ -367,7 +352,8 @@
             "chainBeos": "BEOS",
             "chainHive": "Hive",
             "chainOverview": "Overview",
-            "chainOperations": "Operations"
+            "chainOperations": "Operations",
+            "deeplinksRaw": "Raw"
         }
     },
     "externalLink": {
@@ -390,6 +376,38 @@
             "id": "customOperations",
             "method": "Luba loetlemata toimingud",
             "tooltip": "Luba toimingud uutelt või tundmatutelt lepingutelt. Need kuvatakse üldise vormingus, näidates lepingu nime ja parameetreid."
-        }
+        },
+        "scopePrompt": "Valige allpool soovitud toimingud",
+        "scopeSave": "Salvesta",
+        "scopeUnsupported": "No operations can be configured for this chain yet, sorry."
+    },
+    "raw": {
+        "label": "Toores süvalingi leht",
+        "desc": "See leht töötleb sissetulevaid süvalinkide viipasid ilma ajatundliku krüptimiseta.",
+        "promptFailure": "Toores sügavlink lükati tagasi. ",
+        "exit": "Välju süvalingi lehelt",
+        "chosen": "valitud toimingud",
+        "inProgress": "Süvalinki töödeldakse",
+        "ready": "Ready for raw links!"
+    },
+    "testnet_prefix": "Testnet:",
+    "noImportOption": "No import option found",
+    "chain": {
+        "unsupported": "Unsupported chain."
+    },
+    "copy": "Copy",
+    "close": "Close",
+    "yes": "Yes",
+    "no": "No",
+    "table": {
+        "name": "Name",
+        "active": "Active",
+        "owner": "Owner",
+        "memoKey": "Memo Key"
+    },
+    "crypto": {
+        "slowPath": "BeetVault's encryption component failed to load, so encryption is running slowly and the window may freeze briefly. Reinstalling BeetVault should fix this.",
+        "fallbackRefused": "This security level needs an encryption component that failed to load. Choose Low or Medium, or reinstall BeetVault.",
+        "workerFailed": "Encryption failed. Try a lower security level, or restart BeetVault and try again."
     }
 }

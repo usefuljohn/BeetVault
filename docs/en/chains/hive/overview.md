@@ -31,8 +31,6 @@ See [Operations](./operations.md) for the full list of actions BeetVault can bro
 
 | Method | Supported |
 |--------|-----------|
-| TOTP Deeplink | Yes |
-| Raw Deeplink | Yes |
 | QR Code | Yes |
 | JSON File | Yes |
 
@@ -43,7 +41,7 @@ See [Operations](./operations.md) for the full list of actions BeetVault can bro
 | View account balances | Yes |
 | [Sign messages](../../sign-message.md) | Yes |
 | [Verify messages](../../verify-message.md) | Yes |
-| Deeplink / QR / file transactions | Yes |
+| QR / file transactions | Yes |
 
 ## Block Explorer
 

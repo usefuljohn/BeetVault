@@ -7,7 +7,9 @@
         "reconnect": "再接続",
         "empty": "アカウントに残高がありません",
         "connecting": "ブロックチェーンへの接続",
-        "error": "ブロックチェーンに接続できませんでした"
+        "error": "ブロックチェーンに接続できませんでした",
+        "asset_name": "Asset",
+        "balance": "Balance"
     },
     "nodes": {
         "prompt": "接続するノードを選択してください",
@@ -46,34 +48,11 @@
         "invalidPassword": "回復されたウォレットのパスワードが無効です",
         "duplicate": "同じ名前のウォレットがすでに存在するため、ウォレットの復元を中止します"
     },
-    "raw": {
-        "label": "未加工のディープリンク ページ",
-        "desc": "このページは、時間に敏感な暗号化を行わずに、受信したディープリンク プロンプトを処理します。",
-        "promptFailure": "Raw ディープリンクが拒否されました。",
-        "exit": "ディープリンク ページを終了する"
-    },
-    "totp": {
-        "label": "時間制限付きの暗号化されたディープリンク プロンプト ページ",
-        "desc": "このページは、時間に敏感な方法で暗号化された受信ディープリンク プロンプトを処理します。",
-        "promptFailure": "TOTP ディープリンクが拒否されました。",
-        "prompt": "以下から必要な操作を選択してください",
-        "chosen": "選択された操作",
-        "request": "パスコードをリクエストする",
-        "failed": "受信 TOTP リクエストが失敗しました。",
-        "default": "不十分な操作",
-        "time": "残り時間",
-        "exit": "TOTPページを終了する",
-        "save": "保存",
-        "unsupported": "TOTP はこのチェーンではまだサポートされていません。",
-        "warning": "上記のコードを誰とも共有しないでください",
-        "inProgress": "ディープリンクが処理中です"
-    },
     "chosenScope": {
         "title": {
             "local": "スキャン可能な JSON ファイルの範囲を構成しますか?",
             "qr": "スキャン可能な QR コードの範囲を設定しますか?",
-            "rawLink": "受信する生のディープリンクのスコープを構成しますか?",
-            "totp": "受信ディープリンクのスコープを構成しますか?"
+            "rawLink": "受信する生のディープリンクのスコープを構成しますか?"
         },
         "yes": "はい - スコープをカスタマイズします",
         "no": "いいえ - すべての操作を許可します"
@@ -125,15 +104,24 @@
         "progress": "ローカルファイルを処理しています",
         "unsupported": "ローカル ファイルのサポートは、このチェーンではまだサポートされていません。",
         "promptSuccess": "スキャンされた操作を正常にブロードキャストしました",
-        "promptFailure": "スキャンしたファイルに問題が発生しました"
+        "promptFailure": "スキャンしたファイルに問題が発生しました",
+        "errors": {
+            "tooLarge": "The selected file is too large to be a transaction file.",
+            "invalidJson": "The selected file is not valid JSON.",
+            "invalidFormat": "The file is missing required fields (id, payload.chain, payload.method or payload.params).",
+            "wrongChain": "The file is for a different chain than the one currently selected.",
+            "unsupportedMethod": "The file requests a method this wallet does not support.",
+            "invalidTransaction": "The transaction inside the file could not be parsed.",
+            "outsideScope": "No operation in the file is within the scope you selected.",
+            "notCompleted": "The transaction was declined or could not be broadcast."
+        }
     },
     "actionBar": {
         "Home": "家",
         "AddAccount": "アカウントを追加",
-        "TOTPDeeplink": "TOTPディープリンク",
         "JSONDeeplink": "JSONディープリンク",
-        "RawDeeplink": "未加工のディープリンク",
         "QRCodes": "QRコード",
+        "RawDeeplink": "未加工のディープリンク",
         "SignMessage": "メッセージ署名",
         "VerifyMessage": "メッセージ検証",
         "Settings": "設定",
@@ -182,7 +170,8 @@
             "noResultTerminal": "最終結果が返されませんでした",
             "insufficientKeyAuthority": "キー権限が不足しています",
             "insufficientKeyAuthorityDesc": "インポートされたキータイプ（{keyType}）は要求された操作を実行できません：{error}。このトランザクションにアクティブまたはオーナーの高レベルキーをインポートしてください。"
-        }
+        },
+        "loadError": "Error: Unable to load prompt."
     },
     "abHome": "家",
     "abNew": "新しい",
@@ -341,16 +330,12 @@
             "troubleshooting": "Troubleshooting",
             "faq": "FAQ",
             "deeplinks": "Deeplinks",
-            "deeplinksTotp": "TOTP",
-            "deeplinksRaw": "Raw",
             "deeplinksQr": "QR Code",
             "deeplinksJsonFile": "JSON File",
             "deeplinksOverview": "Overview",
             "deeplinksBts": "BTS / Graphene",
             "deeplinksAntelope": "Antelope",
             "deeplinksHive": "Hive",
-            "totpDeeplink": "TOTP Deeplink",
-            "rawDeeplink": "Raw Deeplink",
             "qrCode": "QR Code Deeplink",
             "jsonFileDeeplink": "JSON File Deeplink",
             "signMessage": "Sign Message",
@@ -367,7 +352,8 @@
             "chainBeos": "BEOS",
             "chainHive": "Hive",
             "chainOverview": "Overview",
-            "chainOperations": "Operations"
+            "chainOperations": "Operations",
+            "deeplinksRaw": "Raw"
         }
     },
     "externalLink": {
@@ -390,6 +376,38 @@
             "id": "customOperations",
             "method": "上記に記載されていない操作を許可",
             "tooltip": "新しいまたは認識されていないコントラクトからの操作を許可します。これらはコントラクト名とパラメータを表示する汎用フォーマットで表示されます。"
-        }
+        },
+        "scopePrompt": "以下から必要な操作を選択してください",
+        "scopeSave": "保存",
+        "scopeUnsupported": "No operations can be configured for this chain yet, sorry."
+    },
+    "raw": {
+        "label": "未加工のディープリンク ページ",
+        "desc": "このページは、時間に敏感な暗号化を行わずに、受信したディープリンク プロンプトを処理します。",
+        "promptFailure": "Raw ディープリンクが拒否されました。",
+        "exit": "ディープリンク ページを終了する",
+        "chosen": "選択された操作",
+        "inProgress": "ディープリンクが処理中です",
+        "ready": "Ready for raw links!"
+    },
+    "testnet_prefix": "Testnet:",
+    "noImportOption": "No import option found",
+    "chain": {
+        "unsupported": "Unsupported chain."
+    },
+    "copy": "Copy",
+    "close": "Close",
+    "yes": "Yes",
+    "no": "No",
+    "table": {
+        "name": "Name",
+        "active": "Active",
+        "owner": "Owner",
+        "memoKey": "Memo Key"
+    },
+    "crypto": {
+        "slowPath": "BeetVault's encryption component failed to load, so encryption is running slowly and the window may freeze briefly. Reinstalling BeetVault should fix this.",
+        "fallbackRefused": "This security level needs an encryption component that failed to load. Choose Low or Medium, or reinstall BeetVault.",
+        "workerFailed": "Encryption failed. Try a lower security level, or restart BeetVault and try again."
     }
 }

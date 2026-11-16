@@ -4,7 +4,7 @@ This page shows how to generate QR code contents for **Hive**.
 
 ## QR Data Format
 
-The QR contains a complete, signable transaction object produced by `hive-tx` v7. The same object you would put in a deeplink — just encoded as a QR instead of a URL:
+The QR contains a complete, signable transaction object produced by `hive-tx` v7. The same object you would put inside a JSON file's `payload.params` — just encoded as a QR instead:
 
 ```json
 {
@@ -60,7 +60,7 @@ import { QRCode } from "react-qrcode-logo";
 
 ## Key Details
 
-- The QR payload is the same complete transaction object used in deeplinks — TAPOS is set automatically by `addOperation()`
+- The QR payload is the same complete transaction object used in JSON files — TAPOS is set automatically by `addOperation()`
 - `operations` is an array of `[opName, opData]` tuples
 - `expiration` format is `YYYY-MM-DDTHH:mm:ss` (ISO 8601 without milliseconds/Z)
 - Hive uses a four-tier key hierarchy: posting, active, owner, and memo — ensure the user's imported key has sufficient authority for the requested operations
@@ -69,5 +69,4 @@ import { QRCode } from "react-qrcode-logo";
 ## See Also
 
 - [QR Code Overview](./overview.md) — input methods, data capacity, practical guidance
-- [TOTP Deeplink — Hive](../totp/hive.md) — encrypted deeplink alternative
-- [Raw Deeplink — Hive](../raw/hive.md) — unencrypted deeplink alternative
+- [JSON File — Hive](../json-file/hive.md) — alternative for large transactions

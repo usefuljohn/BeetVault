@@ -15,12 +15,13 @@ BeetVault supports signing and broadcasting transactions across all supported bl
 
 Interact with BeetVault in multiple ways:
 
-### Deep Links
-Open `beetvault://api/` protocol links from dApps to trigger transaction signing directly. Legacy `beeteos://api/` links are also supported.
+### JSON Files
+Upload a JSON file containing a transaction request from a dApp or tool. Files are accepted up to 10 MB and have no URL length limit, so they suit large batches of operations.
 
-Two deeplink types are available:
-- **Standard deeplinks** (`beetvault://api/`): TOTP-encrypted, time-limited payloads
-- **Raw deeplinks** (`rawbeetvault://api/`): Unencrypted payloads for direct signing
+### Raw Deeplinks
+Open a `rawbeetvault://api/?request=...` link from a dApp while the **Raw Deeplink** page is open and the wallet is unlocked. The request goes through the same scope check and approval prompt as a JSON file. Browsers usually drop links over about 2,048 characters (the wallet's own cap is 4,096), so use a JSON file for anything larger. See [Raw Deeplink](./deeplinks/raw/overview.md).
+
+BeetVault only registers `rawbeetvault://`. The `beetvault://`, `beeteos://` and `rawbeeteos://` schemes are not handled, so BeetVault cannot take links away from other Beet-family wallets.
 
 ### QR Codes
 Scan QR codes containing transaction payloads for air-gapped signing workflows.
@@ -29,11 +30,11 @@ Scan QR codes containing transaction payloads for air-gapped signing workflows.
 Web applications can request transaction signing through BeetVault's injected provider interface.
 
 ### Raw Transactions
-Manually construct and sign raw transaction JSON through the Local and Raw Deeplink screens.
+Manually construct and sign raw transaction JSON through the JSON File and Raw Deeplink screens.
 
-> **Note for dApp developers:** Deeplinks are subject to a ~2,048 character browser URL limit, and QR codes are constrained by image data capacity and scan reliability. For large transactions, use the [JSON File](./deeplinks/json-file/overview.md) method, which has no size restriction.
+> **Note for dApp developers:** QR codes are constrained by image data capacity and scan reliability. For large transactions, use the [JSON File](./deeplinks/json-file/overview.md) method.
 
-> **Chain support:** All four input methods work on every supported chain, including Hive. See [Blockchains](./blockchains.md).
+> **Chain support:** All input methods work on every supported chain, including Hive. See [Blockchains](./blockchains.md).
 
 ## Security Features
 

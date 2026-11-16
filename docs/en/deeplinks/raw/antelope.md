@@ -90,7 +90,7 @@ async function buildAntelopeEsrDeeplink(chain, actions, client) {
   };
 
   const encoded = encodeURIComponent(JSON.stringify(envelope));
-  return `rawbeetvault://api/?chain=${chain}&request=${encoded}`;
+  return `rawbeetvault://api/?request=${encoded}`;
 }
 ```
 
@@ -137,7 +137,7 @@ async function buildAntelopeRawDeeplink(chain, actions, client) {
   };
 
   const encoded = encodeURIComponent(JSON.stringify(request));
-  return `rawbeetvault://api/?chain=${chain}&request=${encoded}`;
+  return `rawbeetvault://api/?request=${encoded}`;
 }
 ```
 
@@ -166,7 +166,7 @@ async function buildAntelopeNullJsonDeeplink(chain, actions) {
   };
 
   const encoded = encodeURIComponent(JSON.stringify(request));
-  return `rawbeetvault://api/?chain=${chain}&request=${encoded}`;
+  return `rawbeetvault://api/?request=${encoded}`;
 }
 ```
 
@@ -201,4 +201,4 @@ The wallet detects `............1` / `............2` placeholders in authorizati
 ## See Also
 
 - [Raw Deeplink Overview](./overview.md) — envelope, protocols, capacity limits, security
-- [TOTP Deeplink — Antelope](../totp/antelope.md) — encrypted alternative
+- [JSON File — Antelope](../json-file/antelope.md) — same envelope, no URL length limit

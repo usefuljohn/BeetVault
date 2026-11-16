@@ -7,7 +7,9 @@
         "reconnect": "เชื่อมต่อใหม่",
         "empty": "ไม่มียอดคงเหลือในบัญชี",
         "connecting": "กำลังเชื่อมต่อกับบล็อกเชน",
-        "error": "ไม่สามารถเชื่อมต่อกับบล็อกเชน"
+        "error": "ไม่สามารถเชื่อมต่อกับบล็อกเชน",
+        "asset_name": "Asset",
+        "balance": "Balance"
     },
     "nodes": {
         "prompt": "เลือกโหนดที่จะเชื่อมต่อ",
@@ -46,34 +48,11 @@
         "invalidPassword": "รหัสผ่านกระเป๋าเงินที่กู้คืนไม่ถูกต้อง",
         "duplicate": "มีกระเป๋าเงินที่มีชื่อเดียวกันอยู่แล้ว ยกเลิกการคืนค่ากระเป๋าเงิน"
     },
-    "raw": {
-        "label": "หน้า Deep Link แบบดิบ",
-        "desc": "หน้านี้ประมวลผลข้อความแจ้ง Deep Link ขาเข้าโดยไม่ต้องเข้ารหัสตามเวลา",
-        "promptFailure": "Deep Link แบบดิบถูกปฏิเสธ ",
-        "exit": "ออกจากหน้า Deep Link"
-    },
-    "totp": {
-        "label": "หน้าข้อความแจ้ง Deep Link แบบจำกัดเวลาและเข้ารหัส",
-        "desc": "หน้านี้ประมวลผลข้อความแจ้ง Deep Link ขาเข้าที่ได้รับการเข้ารหัสในลักษณะที่คำนึงถึงเวลา",
-        "promptFailure": "Deep Link ของ TOTP ถูกปฏิเสธ ",
-        "prompt": "เลือกการดำเนินการที่คุณต้องการด้านล่าง",
-        "chosen": "การดำเนินงานที่เลือก",
-        "request": "ขอรหัสผ่าน",
-        "failed": "คำขอ TOTP ที่เข้ามาล้มเหลว ",
-        "default": "การดำเนินงานไม่เพียงพอ",
-        "time": "เวลาที่เหลืออยู่",
-        "exit": "ออกจากหน้า TOTP",
-        "save": "บันทึก",
-        "unsupported": "TOTP ยังไม่รองรับเชนนี้ ขออภัย",
-        "warning": "อย่าแชร์โค้ดข้างต้นกับใคร",
-        "inProgress": "กำลังประมวลผล Deep Link"
-    },
     "chosenScope": {
         "title": {
             "local": "คุณต้องการกำหนดค่าขอบเขตของไฟล์ JSON ที่สแกนได้หรือไม่",
             "qr": "คุณต้องการกำหนดค่าขอบเขตของรหัส QR ที่สแกนได้หรือไม่",
-            "rawLink": "คุณต้องการกำหนดค่าขอบเขตของ Deep Link ดิบที่เข้ามาหรือไม่",
-            "totp": "คุณต้องการกำหนดค่าขอบเขตของ Deep Link ที่เข้ามาหรือไม่"
+            "rawLink": "คุณต้องการกำหนดค่าขอบเขตของ Deep Link ดิบที่เข้ามาหรือไม่"
         },
         "yes": "ใช่ - ปรับแต่งขอบเขต",
         "no": "ไม่ - อนุญาตการดำเนินการทั้งหมด"
@@ -125,15 +104,24 @@
         "progress": "กำลังประมวลผลไฟล์ในเครื่อง",
         "unsupported": "เชนนี้ยังไม่รองรับไฟล์ในเครื่อง ขออภัย",
         "promptSuccess": "ออกอากาศการดำเนินการสแกนสำเร็จ",
-        "promptFailure": "เกิดข้อผิดพลาดกับไฟล์ที่สแกน"
+        "promptFailure": "เกิดข้อผิดพลาดกับไฟล์ที่สแกน",
+        "errors": {
+            "tooLarge": "The selected file is too large to be a transaction file.",
+            "invalidJson": "The selected file is not valid JSON.",
+            "invalidFormat": "The file is missing required fields (id, payload.chain, payload.method or payload.params).",
+            "wrongChain": "The file is for a different chain than the one currently selected.",
+            "unsupportedMethod": "The file requests a method this wallet does not support.",
+            "invalidTransaction": "The transaction inside the file could not be parsed.",
+            "outsideScope": "No operation in the file is within the scope you selected.",
+            "notCompleted": "The transaction was declined or could not be broadcast."
+        }
     },
     "actionBar": {
         "Home": "บ้าน",
         "AddAccount": "เพิ่มบัญชี",
-        "TOTPDeeplink": "Deep Link TOTP",
         "JSONDeeplink": "Deep Link JSON",
-        "RawDeeplink": "Deep Link ดิบ",
         "QRCodes": "รหัส QR",
+        "RawDeeplink": "Deep Link ดิบ",
         "SignMessage": "ลงชื่อข้อความ",
         "VerifyMessage": "ตรวจสอบข้อความ",
         "Settings": "การตั้งค่า",
@@ -175,7 +163,15 @@
             "noResultTerminal": "ไม่ได้ส่งคืนผลลัพธ์สุดท้าย",
             "insufficientKeyAuthority": "สิทธิ์คีย์ไม่เพียงพอ",
             "insufficientKeyAuthorityDesc": "ประเภทคีย์ที่นำเข้าของคุณ ({keyType}) ไม่สามารถดำเนินการที่ร้องขอได้: {error} กรุณานำเข้าบัญชีที่มีคีย์ระดับสูงกว่า (ใช้งานหรือเจ้าของ) สำหรับธุรกรรมนี้"
-        }
+        },
+        "keywords": {
+            "request": "Operation request",
+            "result": "Operation result"
+        },
+        "evaluate": "Evaluate prompt outcome",
+        "result": "View network result JSON",
+        "details": "View details",
+        "loadError": "Error: Unable to load prompt."
     },
     "abHome": "บ้าน",
     "abNew": "ใหม่",
@@ -334,16 +330,12 @@
             "troubleshooting": "Troubleshooting",
             "faq": "FAQ",
             "deeplinks": "Deeplinks",
-            "deeplinksTotp": "TOTP",
-            "deeplinksRaw": "Raw",
             "deeplinksQr": "QR Code",
             "deeplinksJsonFile": "JSON File",
             "deeplinksOverview": "Overview",
             "deeplinksBts": "BTS / Graphene",
             "deeplinksAntelope": "Antelope",
             "deeplinksHive": "Hive",
-            "totpDeeplink": "TOTP Deeplink",
-            "rawDeeplink": "Raw Deeplink",
             "qrCode": "QR Code Deeplink",
             "jsonFileDeeplink": "JSON File Deeplink",
             "signMessage": "Sign Message",
@@ -360,7 +352,8 @@
             "chainBeos": "BEOS",
             "chainHive": "Hive",
             "chainOverview": "Overview",
-            "chainOperations": "Operations"
+            "chainOperations": "Operations",
+            "deeplinksRaw": "Raw"
         }
     },
     "externalLink": {
@@ -383,6 +376,38 @@
             "id": "customOperations",
             "method": "อนุญาตการทำงานที่ไม่ได้ระบุไว้ข้างต้น",
             "tooltip": "อนุญาตการทำงานจากสัญญาใหม่หรือที่ไม่รู้จัก จะแสดงในรูปแบบทั่วไปโดยแสดงชื่อสัญญาและพารามิเตอร์"
-        }
+        },
+        "scopePrompt": "เลือกการดำเนินการที่คุณต้องการด้านล่าง",
+        "scopeSave": "บันทึก",
+        "scopeUnsupported": "No operations can be configured for this chain yet, sorry."
+    },
+    "raw": {
+        "label": "หน้า Deep Link แบบดิบ",
+        "desc": "หน้านี้ประมวลผลข้อความแจ้ง Deep Link ขาเข้าโดยไม่ต้องเข้ารหัสตามเวลา",
+        "promptFailure": "Deep Link แบบดิบถูกปฏิเสธ ",
+        "exit": "ออกจากหน้า Deep Link",
+        "chosen": "การดำเนินงานที่เลือก",
+        "inProgress": "กำลังประมวลผล Deep Link",
+        "ready": "Ready for raw links!"
+    },
+    "testnet_prefix": "Testnet:",
+    "noImportOption": "No import option found",
+    "chain": {
+        "unsupported": "Unsupported chain."
+    },
+    "copy": "Copy",
+    "close": "Close",
+    "yes": "Yes",
+    "no": "No",
+    "table": {
+        "name": "Name",
+        "active": "Active",
+        "owner": "Owner",
+        "memoKey": "Memo Key"
+    },
+    "crypto": {
+        "slowPath": "BeetVault's encryption component failed to load, so encryption is running slowly and the window may freeze briefly. Reinstalling BeetVault should fix this.",
+        "fallbackRefused": "This security level needs an encryption component that failed to load. Choose Low or Medium, or reinstall BeetVault.",
+        "workerFailed": "Encryption failed. Try a lower security level, or restart BeetVault and try again."
     }
 }

@@ -7,7 +7,9 @@
         "reconnect": "다시 연결",
         "empty": "계정에 잔액이 없습니다.",
         "connecting": "블록체인에 연결",
-        "error": "블록체인에 연결할 수 없습니다."
+        "error": "블록체인에 연결할 수 없습니다.",
+        "asset_name": "Asset",
+        "balance": "Balance"
     },
     "nodes": {
         "prompt": "연결할 노드 선택",
@@ -46,34 +48,11 @@
         "invalidPassword": "복구된 지갑 비밀번호가 잘못되었습니다.",
         "duplicate": "동일한 이름의 지갑이 이미 존재하여 지갑 복원을 중단합니다."
     },
-    "raw": {
-        "label": "원시 딥링크 페이지",
-        "desc": "이 페이지는 시간에 민감한 암호화 없이 수신되는 딥링크 프롬프트를 처리합니다.",
-        "promptFailure": "원시 딥링크가 거부되었습니다. ",
-        "exit": "딥링크 페이지 종료"
-    },
-    "totp": {
-        "label": "시간 제한이 있고 암호화된 딥링크 프롬프트 페이지",
-        "desc": "이 페이지는 시간에 민감한 방식으로 암호화된 수신 딥링크 프롬프트를 처리합니다.",
-        "promptFailure": "TOTP 딥링크가 거부되었습니다. ",
-        "prompt": "아래에서 필요한 작업을 선택하세요.",
-        "chosen": "선택한 작업",
-        "request": "비밀번호 요청",
-        "failed": "수신 TOTP 요청이 실패했습니다. ",
-        "default": "불충분한 운영",
-        "time": "남은 시간",
-        "exit": "TOTP 페이지 종료",
-        "save": "구하다",
-        "unsupported": "죄송합니다. 이 체인에서는 아직 TOTP가 지원되지 않습니다.",
-        "warning": "위 코드를 누구와도 공유하지 마세요.",
-        "inProgress": "딥링크를 처리하는 중입니다."
-    },
     "chosenScope": {
         "title": {
             "local": "스캔 가능한 JSON 파일의 범위를 구성하시겠습니까?",
             "qr": "스캔 가능한 QR 코드의 범위를 구성하시겠습니까?",
-            "rawLink": "들어오는 원시 딥링크의 범위를 구성하시겠습니까?",
-            "totp": "들어오는 딥링크의 범위를 구성하시겠습니까?"
+            "rawLink": "들어오는 원시 딥링크의 범위를 구성하시겠습니까?"
         },
         "yes": "예 - 범위를 맞춤설정합니다.",
         "no": "아니요 - 모든 작업을 허용합니다."
@@ -125,15 +104,24 @@
         "progress": "로컬 파일 처리 중",
         "unsupported": "이 체인에는 아직 로컬 파일 지원이 지원되지 않습니다. 죄송합니다.",
         "promptSuccess": "스캔한 작업을 성공적으로 브로드캐스트했습니다.",
-        "promptFailure": "스캔한 파일에 문제가 발생했습니다."
+        "promptFailure": "스캔한 파일에 문제가 발생했습니다.",
+        "errors": {
+            "tooLarge": "The selected file is too large to be a transaction file.",
+            "invalidJson": "The selected file is not valid JSON.",
+            "invalidFormat": "The file is missing required fields (id, payload.chain, payload.method or payload.params).",
+            "wrongChain": "The file is for a different chain than the one currently selected.",
+            "unsupportedMethod": "The file requests a method this wallet does not support.",
+            "invalidTransaction": "The transaction inside the file could not be parsed.",
+            "outsideScope": "No operation in the file is within the scope you selected.",
+            "notCompleted": "The transaction was declined or could not be broadcast."
+        }
     },
     "actionBar": {
         "Home": "집",
         "AddAccount": "계정 추가",
-        "TOTPDeeplink": "TOTP 딥링크",
         "JSONDeeplink": "JSON 딥링크",
-        "RawDeeplink": "원시 딥링크",
         "QRCodes": "QR 코드",
+        "RawDeeplink": "원시 딥링크",
         "SignMessage": "메시지 서명",
         "VerifyMessage": "메시지 검증",
         "Settings": "설정",
@@ -182,7 +170,8 @@
             "noResultTerminal": "최종 결과가 반환되지 않았습니다",
             "insufficientKeyAuthority": "키 권한이 부족합니다",
             "insufficientKeyAuthorityDesc": "가져온 키 유형({keyType})이 요청된 작업을 수행할 수 없습니다: {error}. 이 트랜잭션에 대해 활성 또는 소유자 키를 사용하여 계정을 가져와 주세요."
-        }
+        },
+        "loadError": "Error: Unable to load prompt."
     },
     "abHome": "집",
     "abNew": "새로운",
@@ -341,16 +330,12 @@
             "troubleshooting": "Troubleshooting",
             "faq": "FAQ",
             "deeplinks": "Deeplinks",
-            "deeplinksTotp": "TOTP",
-            "deeplinksRaw": "Raw",
             "deeplinksQr": "QR Code",
             "deeplinksJsonFile": "JSON File",
             "deeplinksOverview": "Overview",
             "deeplinksBts": "BTS / Graphene",
             "deeplinksAntelope": "Antelope",
             "deeplinksHive": "Hive",
-            "totpDeeplink": "TOTP Deeplink",
-            "rawDeeplink": "Raw Deeplink",
             "qrCode": "QR Code Deeplink",
             "jsonFileDeeplink": "JSON File Deeplink",
             "signMessage": "Sign Message",
@@ -367,7 +352,8 @@
             "chainBeos": "BEOS",
             "chainHive": "Hive",
             "chainOverview": "Overview",
-            "chainOperations": "Operations"
+            "chainOperations": "Operations",
+            "deeplinksRaw": "Raw"
         }
     },
     "externalLink": {
@@ -390,6 +376,38 @@
             "id": "customOperations",
             "method": "위에 나열되지 않은 작업 허용",
             "tooltip": "새롭거나 인식되지 않은 컨트랙트의 작업을 허용합니다. 컨트랙트 이름과 매개변수를 표시하는 일반 형식으로 표시됩니다."
-        }
+        },
+        "scopePrompt": "아래에서 필요한 작업을 선택하세요.",
+        "scopeSave": "구하다",
+        "scopeUnsupported": "No operations can be configured for this chain yet, sorry."
+    },
+    "raw": {
+        "label": "원시 딥링크 페이지",
+        "desc": "이 페이지는 시간에 민감한 암호화 없이 수신되는 딥링크 프롬프트를 처리합니다.",
+        "promptFailure": "원시 딥링크가 거부되었습니다. ",
+        "exit": "딥링크 페이지 종료",
+        "chosen": "선택한 작업",
+        "inProgress": "딥링크를 처리하는 중입니다.",
+        "ready": "Ready for raw links!"
+    },
+    "testnet_prefix": "Testnet:",
+    "noImportOption": "No import option found",
+    "chain": {
+        "unsupported": "Unsupported chain."
+    },
+    "copy": "Copy",
+    "close": "Close",
+    "yes": "Yes",
+    "no": "No",
+    "table": {
+        "name": "Name",
+        "active": "Active",
+        "owner": "Owner",
+        "memoKey": "Memo Key"
+    },
+    "crypto": {
+        "slowPath": "BeetVault's encryption component failed to load, so encryption is running slowly and the window may freeze briefly. Reinstalling BeetVault should fix this.",
+        "fallbackRefused": "This security level needs an encryption component that failed to load. Choose Low or Medium, or reinstall BeetVault.",
+        "workerFailed": "Encryption failed. Try a lower security level, or restart BeetVault and try again."
     }
 }

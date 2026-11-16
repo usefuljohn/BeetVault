@@ -7,7 +7,9 @@
         "reconnect": "Wieder verbinden",
         "empty": "Kein Guthaben auf dem Konto",
         "connecting": "Verbindung zur Blockchain herstellen",
-        "error": "Es konnte keine Verbindung zur Blockchain hergestellt werden"
+        "error": "Es konnte keine Verbindung zur Blockchain hergestellt werden",
+        "asset_name": "Asset",
+        "balance": "Balance"
     },
     "nodes": {
         "prompt": "Wählen Sie einen Knoten aus, mit dem Sie eine Verbindung herstellen möchten",
@@ -46,34 +48,11 @@
         "invalidPassword": "Ungültiges wiederhergestelltes Wallet-Passwort",
         "duplicate": "Es existiert bereits eine Wallet mit demselben Namen. Die Wiederherstellung der Wallet wird abgebrochen"
     },
-    "raw": {
-        "label": "Rohe Deeplink-Seite",
-        "desc": "Diese Seite verarbeitet eingehende Deeplink-Eingabeaufforderungen ohne zeitkritische Verschlüsselung.",
-        "promptFailure": "Ein Raw-Deeplink wurde abgelehnt. ",
-        "exit": "Deeplink-Seite verlassen"
-    },
-    "totp": {
-        "label": "Zeitlich begrenzte und verschlüsselte Deeplink-Eingabeaufforderungsseite",
-        "desc": "Diese Seite verarbeitet eingehende Deeplink-Eingabeaufforderungen, die zeitkritisch verschlüsselt wurden.",
-        "promptFailure": "Ein TOTP-Deeplink wurde abgelehnt. ",
-        "prompt": "Wählen Sie unten Ihre gewünschten Vorgänge aus",
-        "chosen": "Operationen ausgewählt",
-        "request": "Passcode anfordern",
-        "failed": "Eingehende TOTP-Anfrage ist fehlgeschlagen. ",
-        "default": "Unzureichende Operationen",
-        "time": "Verbleibende Zeit",
-        "exit": "TOTP-Seite verlassen",
-        "save": "Speichern",
-        "unsupported": "TOTP wird für diese Kette leider noch nicht unterstützt.",
-        "warning": "Geben Sie den obigen Code nicht an Dritte weiter",
-        "inProgress": "Ein Deeplink wird verarbeitet"
-    },
     "chosenScope": {
         "title": {
             "local": "Möchten Sie den Umfang scannbarer JSON-Dateien konfigurieren?",
             "qr": "Möchten Sie den Umfang der scannbaren QR-Codes konfigurieren?",
-            "rawLink": "Möchten Sie den Umfang eingehender Raw-Deeplinks konfigurieren?",
-            "totp": "Möchten Sie den Umfang eingehender Deeplinks konfigurieren?"
+            "rawLink": "Möchten Sie den Umfang eingehender Raw-Deeplinks konfigurieren?"
         },
         "yes": "Ja – Umfang anpassen",
         "no": "Nein – alle Vorgänge zulassen"
@@ -125,15 +104,24 @@
         "progress": "Lokale Datei wird verarbeitet",
         "unsupported": "Die Unterstützung lokaler Dateien wird für diese Kette leider noch nicht unterstützt.",
         "promptSuccess": "Der gescannte Vorgang wurde erfolgreich übertragen",
-        "promptFailure": "Bei der gescannten Datei ist ein Fehler aufgetreten"
+        "promptFailure": "Bei der gescannten Datei ist ein Fehler aufgetreten",
+        "errors": {
+            "tooLarge": "The selected file is too large to be a transaction file.",
+            "invalidJson": "The selected file is not valid JSON.",
+            "invalidFormat": "The file is missing required fields (id, payload.chain, payload.method or payload.params).",
+            "wrongChain": "The file is for a different chain than the one currently selected.",
+            "unsupportedMethod": "The file requests a method this wallet does not support.",
+            "invalidTransaction": "The transaction inside the file could not be parsed.",
+            "outsideScope": "No operation in the file is within the scope you selected.",
+            "notCompleted": "The transaction was declined or could not be broadcast."
+        }
     },
     "actionBar": {
         "Home": "Heim",
         "AddAccount": "Konto hinzufügen",
-        "TOTPDeeplink": "TOTP-Deeplink",
         "JSONDeeplink": "JSON-Deeplink",
-        "RawDeeplink": "Roher Deeplink",
         "QRCodes": "QR-Codes",
+        "RawDeeplink": "Roher Deeplink",
         "SignMessage": "Nachricht signieren",
         "VerifyMessage": "Nachricht verifizieren",
         "Settings": "Einstellungen",
@@ -182,7 +170,8 @@
             "noResultTerminal": "Kein Endergebnis zurückgegeben",
             "insufficientKeyAuthority": "Unzureichende Schlüsselberechtigung",
             "insufficientKeyAuthorityDesc": "Ihr importierter Schlüsseltyp ({keyType}) kann die angeforderten Operationen nicht ausführen: {error}. Bitte importieren Sie ein Konto mit einem Schlüssel höherer Ebene (aktiv oder Eigentümer) für diese Transaktion."
-        }
+        },
+        "loadError": "Error: Unable to load prompt."
     },
     "abHome": "Heim",
     "abNew": "Neu",
@@ -341,16 +330,12 @@
             "troubleshooting": "Troubleshooting",
             "faq": "FAQ",
             "deeplinks": "Deeplinks",
-            "deeplinksTotp": "TOTP",
-            "deeplinksRaw": "Raw",
             "deeplinksQr": "QR Code",
             "deeplinksJsonFile": "JSON File",
             "deeplinksOverview": "Overview",
             "deeplinksBts": "BTS / Graphene",
             "deeplinksAntelope": "Antelope",
             "deeplinksHive": "Hive",
-            "totpDeeplink": "TOTP Deeplink",
-            "rawDeeplink": "Raw Deeplink",
             "qrCode": "QR Code Deeplink",
             "jsonFileDeeplink": "JSON File Deeplink",
             "signMessage": "Sign Message",
@@ -367,7 +352,8 @@
             "chainBeos": "BEOS",
             "chainHive": "Hive",
             "chainOverview": "Overview",
-            "chainOperations": "Operations"
+            "chainOperations": "Operations",
+            "deeplinksRaw": "Raw"
         }
     },
     "externalLink": {
@@ -390,6 +376,38 @@
             "id": "customOperations",
             "method": "Nicht aufgeführte Operationen erlauben",
             "tooltip": "Erlauben Sie Operationen von neuen oder unbekannten Verträgen. Diese werden mit allgemeiner Formatierung angezeigt, die den Vertragsnamen und die Parameter anzeigt."
-        }
+        },
+        "scopePrompt": "Wählen Sie unten Ihre gewünschten Vorgänge aus",
+        "scopeSave": "Speichern",
+        "scopeUnsupported": "No operations can be configured for this chain yet, sorry."
+    },
+    "raw": {
+        "label": "Rohe Deeplink-Seite",
+        "desc": "Diese Seite verarbeitet eingehende Deeplink-Eingabeaufforderungen ohne zeitkritische Verschlüsselung.",
+        "promptFailure": "Ein Raw-Deeplink wurde abgelehnt. ",
+        "exit": "Deeplink-Seite verlassen",
+        "chosen": "Operationen ausgewählt",
+        "inProgress": "Ein Deeplink wird verarbeitet",
+        "ready": "Ready for raw links!"
+    },
+    "testnet_prefix": "Testnet:",
+    "noImportOption": "No import option found",
+    "chain": {
+        "unsupported": "Unsupported chain."
+    },
+    "copy": "Copy",
+    "close": "Close",
+    "yes": "Yes",
+    "no": "No",
+    "table": {
+        "name": "Name",
+        "active": "Active",
+        "owner": "Owner",
+        "memoKey": "Memo Key"
+    },
+    "crypto": {
+        "slowPath": "BeetVault's encryption component failed to load, so encryption is running slowly and the window may freeze briefly. Reinstalling BeetVault should fix this.",
+        "fallbackRefused": "This security level needs an encryption component that failed to load. Choose Low or Medium, or reinstall BeetVault.",
+        "workerFailed": "Encryption failed. Try a lower security level, or restart BeetVault and try again."
     }
 }

@@ -32,14 +32,11 @@ When you unlock your wallet:
 
 ## Encryption Systems
 
-BeetVault uses two distinct encryption schemes, each matched to its threat model:
-
 | Use case | Key derivation | Cipher | Rationale |
 |----------|----------------|--------|-----------|
 | Wallet data & backups | Argon2id (64–512 MiB) + HKDF-SHA-256 | XChaCha20-Poly1305 | Long-lived secrets — memory-hard KDF resists offline brute-force; HKDF enables efficient key hierarchy |
-| TOTP deeplinks | SHA-256 | XChaCha20-Poly1305 | Transient payloads — passcode expires in 60s–10min, so speed matters more |
 
-Using a memory-hard KDF for TOTP payloads would add seconds of compute for no security benefit, since the passcode is single-use and short-lived. Both schemes provide authenticated encryption, so tampering is always detected.
+XChaCha20-Poly1305 is authenticated encryption, so tampering is always detected.
 
 ## Backup Security
 

@@ -8,7 +8,7 @@ BeetVault is a desktop application that allows you to:
 
 - **Manage multiple blockchain accounts** in a single interface
 - **Sign transactions** securely with your private keys stored locally
-- **Interact with dApps** through deep links, QR codes, and injected calls
+- **Interact with dApps** through JSON files, QR codes, and injected calls
 - **Back up and restore** your wallet with encrypted backup files
 
 ## Supported Blockchains
@@ -31,8 +31,6 @@ See [Blockchains](./blockchains.md) for protocol family details and testnet avai
 
 ## Wallet Operations
 
-- [TOTP Deeplink](./deeplinks/totp/overview.md) — Generate time-limited authentication codes for dApp interactions
-- [Raw Deeplink](./deeplinks/raw/overview.md) — Process unencrypted transaction payloads from dApps
 - [QR Code](./deeplinks/qr/overview.md) — Scan, drag, or upload QR codes containing transaction data
 - [JSON File](./deeplinks/json-file/overview.md) — Upload JSON files with transaction payloads
 - **Sign Message** — Sign arbitrary messages to prove account ownership

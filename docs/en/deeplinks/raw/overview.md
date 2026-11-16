@@ -1,6 +1,8 @@
 # Raw Deeplink
 
-The Raw Deeplink method processes incoming `rawbeetvault://api/` protocol requests from dApps. Unlike TOTP deeplinks, raw deeplinks send unencrypted transaction payloads directly to the wallet for signing.
+The Raw Deeplink method processes incoming `rawbeetvault://api/` protocol requests from dApps. Raw deeplinks carry an unencrypted, URL-encoded request envelope directly to the wallet for signing.
+
+> **Only `rawbeetvault://`.** BeetVault does not handle `beetvault://`, `beeteos://` or `rawbeeteos://` links. Earlier versions registered those schemes too, which could take links away from other Beet-family wallets; current versions release any such registration on launch.
 
 ## How It Works
 
@@ -10,7 +12,7 @@ A dApp constructs a transaction and sends it to BeetVault via the `rawbeetvault:
 
 1. Navigate to **Raw Deeplink** in the main menu
 2. Select the account that will sign incoming requests
-3. Configure which blockchain operations are permitted
+3. Configure which blockchain operations are permitted, then keep the page open
 
 ## Permission Scopes
 
@@ -23,27 +25,28 @@ Before the wallet can process raw deeplinks, you must set the allowed operations
 
 When a dApp sends a `rawbeetvault://api/` request:
 
-1. The wallet receives the URL-encoded JSON payload
-2. It strips the scheme prefix and extracts the query string
-3. The payload is URL-decoded and parsed as JSON
+1. The wallet receives the link and checks it starts with `rawbeetvault://api/` and is no longer than 4,096 characters after that prefix
+2. It parses the query string and reads the `request` parameter
+3. The payload is URL-decoded (links encoded twice are decoded again) and parsed as JSON
 4. The wallet validates the request against your permission scope
 5. If permitted, a prompt appears showing the operation details
 6. Review and approve or deny the transaction
 
-> **Note:** The wallet must be unlocked and the Raw Deeplink page must be active to receive incoming raw deeplinks.
+> **Note:** The wallet must be unlocked, the Raw Deeplink page must be open and its scope saved. A link that arrives anywhere else is rejected with a notification asking you to open the Raw Deeplink page. Only one link is processed at a time.
 
 ## Deeplink URL Format
 
 A raw deeplink has the following structure:
 
 ```
-rawbeetvault://api/?chain=<CHAIN>&request=<url_encoded_json>
+rawbeetvault://api/?request=<url_encoded_json>
 ```
 
 | Query parameter | Description |
 |-----------------|-------------|
-| `chain` | Chain identifier (e.g. `BTS`, `A`, `HIVE`) |
 | `request` | URL-encoded JSON request envelope |
+
+The chain is taken from `payload.chain` inside the envelope. Older examples that also pass `chain=` still work; the parameter is ignored.
 
 ## Request Envelope
 
@@ -67,7 +70,7 @@ The `request` parameter contains a URL-encoded JSON object with this structure:
 | Field | Required | Description |
 |-------|----------|-------------|
 | `type` | Yes | Always `"api"` |
-| `id` | Yes | Unique request identifier (UUID v4 recommended) |
+| `id` | Yes | Your request identifier. Any non-empty string; the wallet uses its own internal id for the approval prompt |
 | `payload.method` | Yes | Request method — typically `"injectedCall"` |
 | `payload.params` | Yes | For `injectedCall`: `[action, stringifiedTx, []]` |
 | `payload.chain` | Yes | **Must match the wallet's currently selected chain** |
@@ -100,23 +103,23 @@ function buildRawDeeplink(chain, transactionObject) {
   };
 
   const encoded = encodeURIComponent(JSON.stringify(request));
-  return `rawbeetvault://api/?chain=${chain}&request=${encoded}`;
+  return `rawbeetvault://api/?request=${encoded}`;
 }
 ```
 
 Render the result as a normal link — the OS hands it to BeetVault:
 
 ```html
-<a href="rawbeetvault://api/?chain=BTS&request=...">Broadcast with BeetVault</a>
+<a href="rawbeetvault://api/?request=...">Broadcast with BeetVault</a>
 ```
 
 ## URL Length Limit
 
-> **For dApp developers:** Keep the complete deeplink URL under **2,048 characters**.
+> **For dApp developers:** Keep the complete deeplink URL under **2,048 characters**. BeetVault itself rejects links with more than 4,096 characters after `rawbeetvault://api/`, but browsers usually fail first.
 
 Chromium-based browsers (Chrome, Edge, Brave, Opera) enforce a practical URL length ceiling around 2,048 characters. Safari and Firefox permit longer URLs, but assume 2,048 is the hard limit for cross-browser reliability — links exceeding it will silently fail to launch the wallet.
 
-This limit applies to the **entire URL**, including the `rawbeetvault://api/?chain=...&request=` prefix and all URL encoding overhead.
+This limit applies to the **entire URL**, including the `rawbeetvault://api/?request=` prefix and all URL encoding overhead.
 
 URL encoding roughly doubles the JSON payload size, because the stringified transaction nested inside `params` contains many quotes and braces that each expand to three characters.
 
@@ -135,30 +138,7 @@ Roughly **5–6 simple operations** is the practical ceiling. Operations carryin
 
 ### Exceeding the limit
 
-If your transaction cannot fit — for example, a batch containing hundreds or thousands of operations — use the [JSON File](../json-file/overview.md) method instead. File uploads have no size restriction.
-
-## Supported Protocols
-
-BeetVault accepts the following protocol URIs for all deeplink types:
-
-| Protocol | Type | Status |
-|----------|------|--------|
-| `beetvault://api/` | Standard (TOTP-encrypted) | **Current** — recommended |
-| `beeteos://api/` | Standard (TOTP-encrypted) | Legacy — still supported |
-| `rawbeetvault://api/` | Raw (unencrypted) | **Current** — recommended |
-| `rawbeeteos://api/` | Raw (unencrypted) | Legacy — still supported |
-
-All four schemes are functionally identical within their type. The `beetvault` variants are recommended for new dApp integrations.
-
-## Raw vs. Standard Deeplinks
-
-| Feature | Standard Deeplink | Raw Deeplink |
-|---------|-------------------|--------------|
-| Encryption | XChaCha20-Poly1305 (TOTP) | None (plaintext) |
-| Protocol | `beetvault://api/` | `rawbeetvault://api/` |
-| Authentication | Passcode-based | Direct payload |
-| Use case | Time-sensitive operations | Direct transaction signing |
-| Setup complexity | Requires TOTP page active | Requires Raw page active |
+If your transaction cannot fit — for example, a batch containing hundreds or thousands of operations — use the [JSON File](../json-file/overview.md) method instead. It takes the same envelope as plain JSON, up to 10 MB.
 
 ## Security Considerations
 

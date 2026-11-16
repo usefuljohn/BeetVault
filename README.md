@@ -34,8 +34,6 @@ Telegram channel: https://t.me/beetapp
 | BEOS | BEOS | Antelope | No |
 | Hive | HIVE | Hive | No |
 
-Hive accounts support balance viewing and message signing, but not the deeplink, QR, or file based transaction methods described below.
-
 ## Features / User Guide
 
 On first run, you will be prompted to create a new wallet to hold your keys. You pick a name for the wallet, enter your first account / address (in the case of BitShares that is the account name, active and memo private keys) and select a password to protect your wallet. You can add several accounts of different chains to one wallet.
@@ -48,14 +46,13 @@ Once your keys and account are verified, you will be redirected to the dashboard
 
 ### Requesting transactions from third party applications
 
-BeetVault accepts transaction requests through four input methods. None of them require an external package or a running local server, and each request must be **explicitly** approved by the user inside the app before anything is broadcast.
+BeetVault accepts transaction requests through three input methods. None of them require an external package or a running local server, and each request must be **explicitly** approved by the user inside the app before anything is broadcast.
 
-- **TOTP deeplinks** (`beetvault://`) — the wallet generates a short-lived passcode which the requesting application uses to encrypt its payload. Encryption uses XChaCha20-Poly1305 with a SHA-256 derived key.
-- **Raw deeplinks** (`rawbeetvault://`) — an unencrypted, URL-encoded transaction payload for direct signing.
 - **QR codes** — scan with a camera, drag in an image, or upload a file. Useful for air-gapped or cross-device signing.
-- **Local JSON files** — upload a transaction payload from disk. Unlike the other methods, this has no size limit, making it the right choice for large batches of operations.
+- **Local JSON files** — upload a transaction payload from disk. Files up to 10 MB are accepted, making this the right choice for large batches of operations.
+- **Raw deeplinks** — `rawbeetvault://api/?request=<URL-encoded request JSON>` links, processed while the Raw Deeplink page is open and the wallet is unlocked. Limited to 4,096 characters.
 
-The legacy `beeteos://` and `rawbeeteos://` schemes remain registered for backwards compatibility.
+BeetVault only registers the `rawbeetvault://` scheme. It does not handle `beetvault://`, `beeteos://` or `rawbeeteos://`; earlier versions registered those too, which could take links away from other Beet-family wallets, and current versions release any such registration on launch.
 
 Before any of these can be used, the user configures which operation types a given input method is permitted to authorise, so the scope of what a third party can request is bounded.
 
@@ -97,7 +94,7 @@ If you are on Linux you may need to run `sudo apt-get install libudev-dev` befor
 
 ### Integrating your application
 
-If you are building an application that needs BeetVault to sign transactions, the in-app **Developer Guide** (Documentation → Developer Guide) documents the request envelope format, the encoding pipeline for each input method, per-chain differences between Graphene and Antelope transactions, and the size limits that apply to deeplinks and QR codes.
+If you are building an application that needs BeetVault to sign transactions, the in-app **Developer Guide** (Documentation → Developer Guide) documents the request envelope format, the encoding pipeline for each input method, per-chain differences between Graphene and Antelope transactions, and the size limits that apply to raw deeplinks, QR codes and JSON files.
 
 The same content lives in this repository under `docs/en/`, and is bundled into the application at build time.
 

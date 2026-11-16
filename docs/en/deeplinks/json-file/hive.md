@@ -79,5 +79,4 @@ writeFileSync("transaction.json", JSON.stringify(file, null, 2));
 ## See Also
 
 - [JSON File Overview](./overview.md) — format, when to use, cross-method comparison
-- [Raw Deeplink — Hive](../raw/hive.md) — URL-based alternative
-- [TOTP Deeplink — Hive](../totp/hive.md) — encrypted alternative
+- [QR Code — Hive](../qr/hive.md) — air-gapped or cross-device alternative

@@ -47,7 +47,7 @@ const action = Action.from(
 );
 ```
 
-## Encoding for the Deeplink
+## Encoding the Transaction
 
 ### ESR (recommended)
 
@@ -211,5 +211,4 @@ writeFileSync("transaction.json", JSON.stringify(file, null, 2));
 ## See Also
 
 - [JSON File Overview](./overview.md) — format, when to use, cross-method comparison
-- [Raw Deeplink — Antelope](../raw/antelope.md) — URL-based alternative
-- [TOTP Deeplink — Antelope](../totp/antelope.md) — encrypted alternative
+- [QR Code — Antelope](../qr/antelope.md) — air-gapped or cross-device alternative

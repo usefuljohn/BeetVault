@@ -7,7 +7,9 @@
         "reconnect": "Riconnetti",
         "empty": "Nessun saldo in conto",
         "connecting": "Connessione alla blockchain",
-        "error": "Impossibile connettersi alla blockchain"
+        "error": "Impossibile connettersi alla blockchain",
+        "asset_name": "Asset",
+        "balance": "Balance"
     },
     "nodes": {
         "prompt": "Seleziona un nodo a cui connetterti",
@@ -46,34 +48,11 @@
         "invalidPassword": "Password del portafoglio recuperata non valida",
         "duplicate": "Esiste già un portafoglio con lo stesso nome, ripristino del portafoglio interrotto"
     },
-    "raw": {
-        "label": "Pagina di collegamento diretto non elaborata",
-        "desc": "Questa pagina elabora le richieste di collegamento diretto in entrata senza crittografia sensibile al tempo.",
-        "promptFailure": "Un collegamento diretto non elaborato è stato rifiutato. ",
-        "exit": "Esci dalla pagina del collegamento diretto"
-    },
-    "totp": {
-        "label": "Pagina di richiesta del deeplink crittografata e limitata nel tempo",
-        "desc": "Questa pagina elabora le richieste di collegamento diretto in arrivo che sono state crittografate in modo sensibile al tempo.",
-        "promptFailure": "Un deeplink TOTP è stato rifiutato. ",
-        "prompt": "Seleziona le operazioni richieste di seguito",
-        "chosen": "operazioni scelte",
-        "request": "Richiedi il codice di accesso",
-        "failed": "La richiesta TOTP in entrata non è riuscita. ",
-        "default": "Operazioni insufficienti",
-        "time": "Tempo rimanente",
-        "exit": "Esci dalla pagina TOTP",
-        "save": "Salva",
-        "unsupported": "TOTP non è ancora supportato per questa catena, siamo spiacenti.",
-        "warning": "Non condividere il codice sopra con nessuno",
-        "inProgress": "È in corso l'elaborazione di un collegamento diretto"
-    },
     "chosenScope": {
         "title": {
             "local": "Desideri configurare l'ambito dei file JSON analizzabili?",
             "qr": "Desideri configurare l'ambito dei codici QR scansionabili?",
-            "rawLink": "Desideri configurare l'ambito dei deeplink non elaborati in entrata?",
-            "totp": "Desideri configurare l'ambito dei deeplink in entrata?"
+            "rawLink": "Desideri configurare l'ambito dei deeplink non elaborati in entrata?"
         },
         "yes": "Sì, personalizza l'ambito",
         "no": "No - consenti tutte le operazioni"
@@ -125,15 +104,24 @@
         "progress": "Elaborazione file locale",
         "unsupported": "Il supporto dei file locali non è ancora supportato per questa catena, mi dispiace.",
         "promptSuccess": "Operazione di scansione trasmessa correttamente",
-        "promptFailure": "Qualcosa è andato storto con il file digitalizzato"
+        "promptFailure": "Qualcosa è andato storto con il file digitalizzato",
+        "errors": {
+            "tooLarge": "The selected file is too large to be a transaction file.",
+            "invalidJson": "The selected file is not valid JSON.",
+            "invalidFormat": "The file is missing required fields (id, payload.chain, payload.method or payload.params).",
+            "wrongChain": "The file is for a different chain than the one currently selected.",
+            "unsupportedMethod": "The file requests a method this wallet does not support.",
+            "invalidTransaction": "The transaction inside the file could not be parsed.",
+            "outsideScope": "No operation in the file is within the scope you selected.",
+            "notCompleted": "The transaction was declined or could not be broadcast."
+        }
     },
     "actionBar": {
         "Home": "Casa",
         "AddAccount": "Aggiungi account",
-        "TOTPDeeplink": "Collegamento diretto TOTP",
         "JSONDeeplink": "Collegamento diretto JSON",
-        "RawDeeplink": "Collegamento diretto grezzo",
         "QRCodes": "Codici QR",
+        "RawDeeplink": "Collegamento diretto grezzo",
         "SignMessage": "Firma messaggio",
         "VerifyMessage": "Verifica messaggio",
         "Settings": "Impostazioni",
@@ -182,7 +170,8 @@
             "noResultTerminal": "Nessun risultato finale restituito",
             "insufficientKeyAuthority": "Autorità chiave insufficiente",
             "insufficientKeyAuthorityDesc": "Il tipo di chiave importata ({keyType}) non può eseguire le operazioni richieste: {error}. Per favore importa un account con una chiave di livello superiore (attiva o proprietario) per questa transacción."
-        }
+        },
+        "loadError": "Error: Unable to load prompt."
     },
     "abHome": "Casa",
     "abNew": "Nuovo",
@@ -341,16 +330,12 @@
             "troubleshooting": "Troubleshooting",
             "faq": "FAQ",
             "deeplinks": "Deeplinks",
-            "deeplinksTotp": "TOTP",
-            "deeplinksRaw": "Raw",
             "deeplinksQr": "QR Code",
             "deeplinksJsonFile": "JSON File",
             "deeplinksOverview": "Overview",
             "deeplinksBts": "BTS / Graphene",
             "deeplinksAntelope": "Antelope",
             "deeplinksHive": "Hive",
-            "totpDeeplink": "TOTP Deeplink",
-            "rawDeeplink": "Raw Deeplink",
             "qrCode": "QR Code Deeplink",
             "jsonFileDeeplink": "JSON File Deeplink",
             "signMessage": "Sign Message",
@@ -367,7 +352,8 @@
             "chainBeos": "BEOS",
             "chainHive": "Hive",
             "chainOverview": "Overview",
-            "chainOperations": "Operations"
+            "chainOperations": "Operations",
+            "deeplinksRaw": "Raw"
         }
     },
     "externalLink": {
@@ -390,6 +376,38 @@
             "id": "customOperations",
             "method": "Consenti operazioni non elencate",
             "tooltip": "Consenti operazioni da contratti nuovi o non riconosciuti. Saranno visualizzate con formattazione generica mostrando il nome del contratto e i parametri."
-        }
+        },
+        "scopePrompt": "Seleziona le operazioni richieste di seguito",
+        "scopeSave": "Salva",
+        "scopeUnsupported": "No operations can be configured for this chain yet, sorry."
+    },
+    "raw": {
+        "label": "Pagina di collegamento diretto non elaborata",
+        "desc": "Questa pagina elabora le richieste di collegamento diretto in entrata senza crittografia sensibile al tempo.",
+        "promptFailure": "Un collegamento diretto non elaborato è stato rifiutato. ",
+        "exit": "Esci dalla pagina del collegamento diretto",
+        "chosen": "operazioni scelte",
+        "inProgress": "È in corso l'elaborazione di un collegamento diretto",
+        "ready": "Ready for raw links!"
+    },
+    "testnet_prefix": "Testnet:",
+    "noImportOption": "No import option found",
+    "chain": {
+        "unsupported": "Unsupported chain."
+    },
+    "copy": "Copy",
+    "close": "Close",
+    "yes": "Yes",
+    "no": "No",
+    "table": {
+        "name": "Name",
+        "active": "Active",
+        "owner": "Owner",
+        "memoKey": "Memo Key"
+    },
+    "crypto": {
+        "slowPath": "BeetVault's encryption component failed to load, so encryption is running slowly and the window may freeze briefly. Reinstalling BeetVault should fix this.",
+        "fallbackRefused": "This security level needs an encryption component that failed to load. Choose Low or Medium, or reinstall BeetVault.",
+        "workerFailed": "Encryption failed. Try a lower security level, or restart BeetVault and try again."
     }
 }

@@ -44,14 +44,14 @@ async function buildHiveRawDeeplink(operations) {
   };
 
   const encoded = encodeURIComponent(JSON.stringify(request));
-  return `rawbeetvault://api/?chain=HIVE&request=${encoded}`;
+  return `rawbeetvault://api/?request=${encoded}`;
 }
 ```
 
 Render the result as a normal link — the OS hands it to BeetVault:
 
 ```html
-<a href="rawbeetvault://api/?chain=HIVE&request=...">Broadcast with BeetVault</a>
+<a href="rawbeetvault://api/?request=...">Broadcast with BeetVault</a>
 ```
 
 ## Key Details
@@ -67,4 +67,4 @@ Render the result as a normal link — the OS hands it to BeetVault:
 ## See Also
 
 - [Raw Deeplink Overview](./overview.md) — envelope, protocols, capacity limits, security
-- [TOTP Deeplink — Hive](../totp/hive.md) — encrypted alternative
+- [JSON File — Hive](../json-file/hive.md) — same envelope, no URL length limit

@@ -28,7 +28,7 @@ The wallet checks authorization by reading the numeric operation type from each 
 
 ## Generating QR Contents
 
-Note this **does not** call `finalize()` — unlike deeplink generation, the transaction is left unfinalized:
+Note this **does not** call `finalize()` — unlike JSON file generation, the transaction is left unfinalized:
 
 ```js
 import TransactionBuilder from "bitsharesjs/lib/chain/src/TransactionBuilder";
@@ -80,5 +80,4 @@ import { QRCode } from "react-qrcode-logo";
 ## See Also
 
 - [QR Code Overview](./overview.md) — input methods, data capacity, practical guidance
-- [TOTP Deeplink — BTS / Graphene](../totp/bts.md) — encrypted deeplink alternative
-- [Raw Deeplink — BTS / Graphene](../raw/bts.md) — unencrypted deeplink alternative
+- [JSON File — BTS / Graphene](../json-file/bts.md) — alternative for large transactions

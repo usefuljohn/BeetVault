@@ -151,5 +151,4 @@ import { QRCode } from "react-qrcode-logo";
 ## See Also
 
 - [QR Code Overview](./overview.md) — input methods, data capacity, practical guidance
-- [TOTP Deeplink — Antelope](../totp/antelope.md) — encrypted deeplink alternative
-- [Raw Deeplink — Antelope](../raw/antelope.md) — unencrypted deeplink alternative
+- [JSON File — Antelope](../json-file/antelope.md) — alternative for large transactions

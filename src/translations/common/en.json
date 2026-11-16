@@ -24,7 +24,10 @@
         "generic": {
             "warning": "This operation is not recognized by your wallet version. Carefully review the contract name and parameters before approving."
         },
-        "esrNullUser": "The requesting application did not specify which account to use. Your currently selected account will be used to sign this transaction."
+        "esrNullUser": "The requesting application did not specify which account to use. Your currently selected account will be used to sign this transaction.",
+        "scopePrompt": "Select your required operations below",
+        "scopeSave": "Save",
+        "scopeUnsupported": "No operations can be configured for this chain yet, sorry."
     },
     "testnet_prefix": "Testnet:",
     "noImportOption": "No import option found",
@@ -78,35 +81,11 @@
         "invalidPassword": "Invalid recovered wallet password",
         "duplicate": "A wallet with the same name already exists, aborting wallet restoration"
     },
-    "raw": {
-        "label": "Raw deeplink page",
-        "desc": "This page processes incoming deeplink prompts without time-sensitive encryption.",
-        "promptFailure": "A Raw deeplink was rejected. If intended, navigate to the Raw link page and try again.",
-        "exit": "Exit deeplink page",
-        "ready": "Ready for raw links!"
-    },
-    "totp": {
-        "label": "Time-limited and encrypted deeplink prompt page",
-        "desc": "This page processes incoming deeplink prompts which have been encrypted in a time sensitive manner.",
-        "promptFailure": "A TOTP deeplink was rejected. If intended, navigate to the TOTP page and try again.",
-        "prompt": "Select your required operations below",
-        "chosen": "operations chosen",
-        "request": "Request passcode",
-        "failed": "Incoming TOTP request failed. Check you're using the right account.",
-        "default": "Insufficient operations",
-        "time": "Time remaining",
-        "exit": "Exit TOTP page",
-        "save": "Save",
-        "unsupported": "TOTP is not yet supported for this chain, sorry.",
-        "warning": "Do not share the code above with anyone",
-        "inProgress": "A deeplink is being processed"
-    },
     "chosenScope": {
         "title": {
             "local": "Do you wish to configure the scope of scannable JSON files?",
             "qr": "Do you wish to configure the scope of scannable QR codes?",
-            "rawLink": "Do you wish to configure the scope of incoming raw deeplinks?",
-            "totp": "Do you wish to configure the scope of incoming deeplinks?"
+            "rawLink": "Do you wish to configure the scope of incoming raw deeplinks?"
         },
         "yes": "Yes - customize scope",
         "no": "No - allow all operations"
@@ -158,15 +137,24 @@
         "progress": "Processing local file",
         "unsupported": "Local file support isn't supported for this chain yet, sorry.",
         "promptSuccess": "Successfully broadcast scanned operation",
-        "promptFailure": "Something went wrong with the scanned file"
+        "promptFailure": "Something went wrong with the scanned file",
+        "errors": {
+            "tooLarge": "The selected file is too large to be a transaction file.",
+            "invalidJson": "The selected file is not valid JSON.",
+            "invalidFormat": "The file is missing required fields (id, payload.chain, payload.method or payload.params).",
+            "wrongChain": "The file is for a different chain than the one currently selected.",
+            "unsupportedMethod": "The file requests a method this wallet does not support.",
+            "invalidTransaction": "The transaction inside the file could not be parsed.",
+            "outsideScope": "No operation in the file is within the scope you selected.",
+            "notCompleted": "The transaction was declined or could not be broadcast."
+        }
     },
     "actionBar": {
         "Home": "Home",
         "AddAccount": "Add Account",
-        "TOTPDeeplink": "TOTP Deeplink",
-        "JSONDeeplink": "JSON Deeplink",
-        "RawDeeplink": "Raw Deeplink",
+        "JSONDeeplink": "JSON File",
         "QRCodes": "QR Codes",
+        "RawDeeplink": "Raw Deeplink",
         "SignMessage": "Sign Message",
         "VerifyMessage": "Verify Message",
         "Settings": "Settings",
@@ -186,18 +174,14 @@
             "troubleshooting": "Troubleshooting",
             "faq": "FAQ",
             "deeplinks": "Deeplinks",
-            "deeplinksTotp": "TOTP",
-            "deeplinksRaw": "Raw",
             "deeplinksQr": "QR Code",
             "deeplinksJsonFile": "JSON File",
             "deeplinksOverview": "Overview",
             "deeplinksBts": "BTS / Graphene",
             "deeplinksAntelope": "Antelope",
             "deeplinksHive": "Hive",
-            "totpDeeplink": "TOTP Deeplink",
-            "rawDeeplink": "Raw Deeplink",
-            "qrCode": "QR Code Deeplink",
-            "jsonFileDeeplink": "JSON File Deeplink",
+            "qrCode": "QR Code",
+            "jsonFileDeeplink": "JSON File",
             "signMessage": "Sign Message",
             "verifyMessage": "Verify Message",
             "developerGuide": "Developer Guide",
@@ -212,7 +196,8 @@
             "chainBeos": "BEOS",
             "chainHive": "Hive",
             "chainOverview": "Overview",
-            "chainOperations": "Operations"
+            "chainOperations": "Operations",
+            "deeplinksRaw": "Raw"
         }
     },
     "popup": {
@@ -410,5 +395,19 @@
         "proceedToURL": "Proceed to URL:",
         "checkingLeave": "Please verify this before continuing.",
         "openLink": "Open link"
+    },
+    "raw": {
+        "label": "Raw deeplink page",
+        "desc": "This page processes incoming deeplink prompts without time-sensitive encryption.",
+        "promptFailure": "A Raw deeplink was rejected. If intended, navigate to the Raw link page and try again.",
+        "exit": "Exit deeplink page",
+        "ready": "Ready for raw links!",
+        "chosen": "operations chosen",
+        "inProgress": "A deeplink is being processed"
+    },
+    "crypto": {
+        "slowPath": "BeetVault's encryption component failed to load, so encryption is running slowly and the window may freeze briefly. Reinstalling BeetVault should fix this.",
+        "fallbackRefused": "This security level needs an encryption component that failed to load. Choose Low or Medium, or reinstall BeetVault.",
+        "workerFailed": "Encryption failed. Try a lower security level, or restart BeetVault and try again."
     }
 }

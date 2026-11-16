@@ -33,23 +33,24 @@ Common issues and their solutions.
 
 ## Modal Window Doesn't Appear
 
-**Problem:** Clicking a deeplink or QR code doesn't show the transaction prompt.
+**Problem:** Uploading a JSON file or scanning a QR code doesn't show the transaction prompt.
 
 **Solutions:**
 - Ensure BeetVault is fully unlocked (not on the lock screen)
 - Check that no other modal is already open
-- Verify you are on the matching wallet page (TOTP links require the TOTP page, raw links require the Raw Deeplink page)
+- Check that the file's `payload.chain` matches the chain currently selected in the wallet
+- Check that the operations in the transaction are within the scope you selected
 - Restart BeetVault and try again
 
-## Deeplink Doesn't Launch the Wallet
+## Protocol Links Don't Open BeetVault
 
-**Problem:** Clicking a deeplink in your browser does nothing at all — the wallet never opens.
+**Problem:** A protocol link does nothing, opens a different wallet, or shows "A Raw deeplink was rejected".
 
 **Solutions:**
-- **Check the URL length.** Chromium-based browsers (Chrome, Edge, Brave, Opera) silently drop URLs longer than roughly 2,048 characters. Large transactions frequently exceed this.
-- Ask the dApp to use the [JSON File](./deeplinks/json-file/overview.md) method instead — file uploads have no size limit
-- Confirm BeetVault is registered as the protocol handler for `beetvault://` on your system
-- Try the link in a different browser to rule out a browser-specific issue
+- BeetVault only handles `rawbeetvault://` links. `beetvault://`, `beeteos://` and `rawbeeteos://` links are left to other Beet-family wallets; ask the dApp for a `rawbeetvault://` link or a [JSON File](./deeplinks/json-file/overview.md)
+- Unlock the wallet and open **Raw Deeplink** from the main menu, choose a scope, and then open the link again
+- Check that the request's `payload.chain` matches the selected account's chain and that its operations are within the chosen scope
+- Links longer than 4,096 characters are rejected; use a JSON file for large transactions
 
 ## QR Code Won't Scan
 

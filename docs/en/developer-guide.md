@@ -4,20 +4,19 @@ This page consolidates everything needed to integrate a dApp with BeetVault. It 
 
 ## Choosing an Input Method
 
-BeetVault accepts transaction requests through four channels. Pick based on transaction size and user workflow:
+BeetVault accepts transaction requests through three channels. Pick based on transaction size and user workflow:
 
 | Method | Capacity | Best for |
 |--------|----------|----------|
-| [Raw Deeplink](./deeplinks/raw/overview.md) | ~5–6 simple operations | One-click browser handoff |
-| [TOTP Deeplink](./deeplinks/totp/overview.md) | ~5–6 simple operations | Same, with encryption in transit |
+| [JSON File](./deeplinks/json-file/overview.md) | 10 MB | Default choice; large batches, offline workflows |
 | [QR Code](./deeplinks/qr/overview.md) | ~1,000 bytes recommended | Air-gapped or cross-device signing |
-| [JSON File](./deeplinks/json-file/overview.md) | Unlimited | Large batches, offline workflows |
+| [Raw Deeplink](./deeplinks/raw/overview.md) | ~2,048-character URL in practice (wallet cap: 4,096 after `rawbeetvault://api/`) | One-click requests from a dApp on the same machine |
 
-Offering more than one gives users a fallback when a transaction outgrows a URL.
+> **Only `rawbeetvault://`.** BeetVault does not handle `beetvault://`, `beeteos://` or `rawbeeteos://` links, so it cannot take links meant for other Beet-family wallets. Raw deeplinks are only processed while the user has the **Raw Deeplink** page open with an unlocked wallet.
 
 ## The Request Envelope
 
-Raw deeplinks, TOTP deeplinks, and JSON files all wrap the transaction in the same envelope:
+JSON files and raw deeplinks wrap the transaction in this envelope:
 
 ```json
 {
@@ -37,10 +36,11 @@ Raw deeplinks, TOTP deeplinks, and JSON files all wrap the transaction in the sa
 | Field | Required | Notes |
 |-------|----------|-------|
 | `type` | Yes | Always `"api"` |
-| `id` | Yes | UUID v4 recommended |
+| `id` | Yes | Any non-empty string; UUID v4 recommended |
 | `payload.method` | Yes | Usually `"injectedCall"` |
 | `payload.params` | Yes | `[action, stringifiedTx, []]` |
 | `payload.chain` | Yes | Must match the wallet's active chain |
+| `payload.encoding` | No | `"json"` (default) or `"esr"` for ESR-encoded Antelope requests |
 | `payload.appName` | No | Shown in the approval prompt |
 | `payload.browser` | No | Shown in the approval prompt |
 | `payload.origin` | No | Shown in the approval prompt |
@@ -53,9 +53,8 @@ Each method encodes the same envelope differently:
 
 | Method | Pipeline |
 |--------|----------|
-| Raw Deeplink | `JSON.stringify` → `encodeURIComponent` |
-| TOTP Deeplink | `JSON.stringify` → encrypt → base64 → base64 → `encodeURIComponent` |
 | JSON File | `JSON.stringify` |
+| Raw deeplink | `"rawbeetvault://api/?request=" + encodeURIComponent(JSON.stringify(envelope))` |
 | QR Code | `JSON.stringify` of the bare transaction object (or ESR string) |
 
 For **Antelope chains**, three encoding options are available for `params[1]`:
@@ -66,11 +65,11 @@ For **Antelope chains**, three encoding options are available for `params[1]`:
 | JSON (full) | Stringified transaction with TAPOS + hex data | omitted | Full dApp control |
 | JSON (null) | Stringified `{actions}` with placeholder auth | omitted | No chain access needed, signer-agnostic |
 
-See the [Antelope Raw Deeplink](./deeplinks/raw/antelope.md) page for encoding examples.
+See the [Antelope JSON File](./deeplinks/json-file/antelope.md) page for encoding examples.
 
 ## Worked Example
 
-The same BitShares transfer, delivered four ways.
+The same BitShares transfer, delivered three ways.
 
 ### 1. Build the transaction
 
@@ -123,28 +122,24 @@ function buildEnvelope(chain, tr) {
 ### 3. Emit each format
 
 ```js
+import { writeFileSync } from "fs";
+
 const tr = await buildTransaction(["transfer"], [transferOp]);
 const envelope = buildEnvelope("BTS", tr);
 const json = JSON.stringify(envelope);
 
-// Raw deeplink
-const rawUrl =
-  `rawbeetvault://api/?chain=BTS&request=${encodeURIComponent(json)}`;
-
 // JSON file (data URI for browser download)
 const fileHref = `data:text/json;charset=utf-8,${encodeURIComponent(json)}`;
 
-// TOTP deeplink (requires the passcode from the wallet)
-const encrypted = encryptForBeetVault(json, totpCode);
-const wire = Buffer.from(encrypted, "utf-8").toString("base64");
-const totpUrl =
-  `beetvault://api/?chain=BTS&request=${encodeURIComponent(wire)}`;
+// JSON file (written from a script or CLI tool)
+writeFileSync("transaction.json", json);
+
+// Raw deeplink (same envelope, URL-encoded)
+const rawUrl = `rawbeetvault://api/?request=${encodeURIComponent(json)}`;
 
 // QR code — bare transaction object, no envelope
 const qrValue = JSON.stringify(tr.toObject());
 ```
-
-See [TOTP Deeplink](./deeplinks/totp/overview.md) for the `encryptForBeetVault` implementation.
 
 ## Chain Differences
 
@@ -167,31 +162,26 @@ The request envelope is identical across all chains — only transaction constru
 
 ## Common Pitfalls
 
-**Chain mismatch.** If `payload.chain` does not match the chain the wallet currently has selected, the request is rejected before the user sees anything. Neither side surfaces an obvious error.
+**Chain mismatch.** If `payload.chain` does not match the chain the wallet currently has selected, the request is rejected before the user sees a prompt. The wallet's notification says the file is for a different chain.
 
-**Wrong page open.** Deeplinks only register while the matching page is active — TOTP links need the TOTP Deeplink page, raw links need the Raw Deeplink page. The wallet must also be unlocked.
-
-**Operation outside permission scope.** Users configure which operation types a page may authorize. Operations outside that scope are silently dropped. If nothing happens, have the user re-check their scope selection.
+**Operation outside permission scope.** Users configure which operation types a page may authorize. If no operation in the transaction is within that scope, the request is rejected and the notification says so. Have the user re-check their scope selection.
 
 **Memo message as string.** Graphene memo messages must be converted to bytes with `Buffer.from(message, "utf-8")` before being added to the transaction. Passing a raw string produces a malformed transaction.
 
-**URL too long.** Chromium-based browsers silently discard URLs beyond roughly 2,048 characters. The link simply does nothing. Measure before shipping and fall back to file download.
+**Wrong page open.** Raw deeplinks are only processed while the **Raw Deeplink** page is open, its scope is saved and the wallet is unlocked. Anywhere else, the wallet shows a notification asking the user to open that page.
 
-**Expired TOTP passcode.** The code is valid only for its configured window. If the user takes too long, decryption fails. Have them generate a fresh code and retry.
+**URL too long.** Chromium-based browsers silently discard URLs beyond roughly 2,048 characters, so the link does nothing. BeetVault also rejects links with more than 4,096 characters after `rawbeetvault://api/`. Measure before shipping and fall back to a file download.
+
+**URL-encoded file contents.** Write the envelope as plain JSON. A file containing `%7B...` instead of `{...` is rejected as invalid JSON.
 
 ## Graceful Degradation
 
-Measure the encoded payload and hide any method that cannot carry it:
+Measure each payload and hide any method that cannot carry the transaction:
 
 ```js
-const json = JSON.stringify(envelope);
-const rawUrlLength =
-  `rawbeetvault://api/?chain=${chain}&request=`.length +
-  encodeURIComponent(json).length;
+const canUseDeeplink = rawUrl.length < 2048;
 
 const qrLength = JSON.stringify(tr.toObject()).length;
-
-const canUseDeeplink = rawUrlLength < 2048;
 const canUseQR = qrLength < 1200;
 ```
 
@@ -203,13 +193,12 @@ Then render conditionally, keeping the file download always available:
 <DownloadButton href={fileHref} />   {/* always available */}
 ```
 
-This mirrors how BeetVault's own reference UI handles oversized transactions — it disables the QR and deeplink tabs rather than presenting options that will fail.
-
 ## Testing Checklist
 
 - Transaction broadcasts successfully through each method you offer
 - Chain identifier matches what the wallet expects for your target network
-- Longest realistic transaction still fits within URL and QR limits
+- Longest realistic transaction still fits within the QR limit, if you offer QR
+- Longest realistic transaction still fits within the deeplink URL limit, if you offer raw links
+- Raw links arriving while the Raw Deeplink page is closed show the user where to go
 - Oversized transactions degrade to file download rather than failing silently
 - Memo-carrying operations encode correctly
-- Expired TOTP codes surface a clear retry path to the user

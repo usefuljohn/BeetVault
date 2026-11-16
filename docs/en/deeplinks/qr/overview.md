@@ -1,4 +1,4 @@
-# QR Code Deeplink
+# QR Code
 
 The QR Code method lets you interact with dApps by scanning, dragging, or uploading QR codes containing transaction payloads. This is useful for air-gapped workflows or dApps that present transaction requests as QR codes.
 
@@ -46,7 +46,7 @@ After selecting your input method:
 
 ## QR Code Data Format
 
-> **Important:** QR codes do **not** use the `{type, id, payload}` request envelope that deeplinks and JSON files use. A QR code contains a **bare transaction object** or **ESR-encoded signing request**. The wallet builds the envelope itself after scanning.
+> **Important:** QR codes do **not** use the `{type, id, payload}` request envelope that JSON files use. A QR code contains a **bare transaction object** or **ESR-encoded signing request**. The wallet builds the envelope itself after scanning.
 
 The exact shape depends on the chain family:
 
@@ -77,7 +77,7 @@ Lower `ecLevel` values fit more data; higher values scan more reliably. See [Dat
 
 ## Data Capacity
 
-QR codes are images, not URLs — so the ~2,048 character browser limit that constrains deeplinks does not apply here. Instead, the limit comes from how much data can be encoded into the image itself while remaining scannable.
+The limit for QR codes comes from how much data can be encoded into the image itself while remaining scannable.
 
 ### How QR capacity works
 
