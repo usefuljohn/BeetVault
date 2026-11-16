@@ -62,10 +62,6 @@ class Hive extends BlockchainAPI {
     this.name = "Hive";
   }
 
-  supportsTOTP() {
-    return true;
-  }
-
   supportsQR() {
     return true;
   }

@@ -22,7 +22,6 @@ import { readDocFile, readManifest } from './docs.js';
 import {
     handleBlockchainRequest,
     readFileSecure,
-    parseDeeplink,
 } from './blockchainHandler.js';
 import * as sessionManager from './sessionManager.js';
 import { getSignature } from '../lib/SecureRemote.js';

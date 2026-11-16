@@ -49,3 +49,5 @@ export const SAFE_DOMAINS = [
     'xprnetwork.org',
     'hive.io',
 ];
+
+export { MAX_JSON_UPLOAD_SIZE, MAX_BACKUP_FILE_SIZE } from '../lib/limits.js';

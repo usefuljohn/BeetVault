@@ -27,6 +27,14 @@
     "directories": {
       "buildResources": "resources"
     },
+    "protocols": [
+      {
+        "name": "BeetVault raw deeplink",
+        "schemes": [
+          "rawbeetvault"
+        ]
+      }
+    ],
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true
@@ -39,12 +47,6 @@
       "target": [
         "deb",
         "AppImage"
-      ],
-      "mimeTypes": [
-        "x-scheme-handler/rawbeeteos",
-        "x-scheme-handler/beeteos",
-        "x-scheme-handler/rawbeetvault",
-        "x-scheme-handler/beetvault"
       ],
       "executableName": "beetvault"
     }

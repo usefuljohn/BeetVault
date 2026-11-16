@@ -10,7 +10,7 @@
     import { Button } from '@/components/ui/ui/button';
     import { Spinner } from '@/components/ui/ui/spinner';
     import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/ui/dropdown-menu';
-    import { Menu, Home, Plus, KeyRound, Upload, Code, QrCode, PenLine, ShieldCheck, Download, BookOpen, Settings, Network, LogOut } from 'lucide-vue-next';
+    import { Menu, Home, Plus, Upload, QrCode, Code, PenLine, ShieldCheck, Download, BookOpen, Settings, Network, LogOut } from 'lucide-vue-next';
     import { useInjectedCall } from "@/composables/useInjectedCall.js";
     import { useProcessing } from "@/composables/useProcessing.js";
 
@@ -25,10 +25,9 @@
     const iconMap = {
         home: Home,
         add: Plus,
-        generating_tokens: KeyRound,
         upload: Upload,
-        raw_on: Code,
         qr_code_2: QrCode,
+        raw_on: Code,
         pen_line: PenLine,
         shield_check: ShieldCheck,
         download: Download,
@@ -68,16 +67,16 @@
                 url: "/add-account"
             },
             {
-                text: t("common.actionBar.TOTPDeeplink"),
-                index: 2,
-                icon: "generating_tokens",
-                url: "/totp"
-            },
-            {
                 text: t("common.actionBar.JSONDeeplink"),
-                index: 3,
+                index: 2,
                 icon: "upload",
                 url: "/local"
+            },
+            {
+                text: t("common.actionBar.QRCodes"),
+                index: 3,
+                icon: "qr_code_2",
+                url: "/qr"
             },
             {
                 text: t("common.actionBar.RawDeeplink"),
@@ -86,50 +85,44 @@
                 url: "/raw-link"
             },
             {
-                text: t("common.actionBar.QRCodes"),
-                index: 5,
-                icon: "qr_code_2",
-                url: "/qr"
-            },
-            {
                 text: t("common.actionBar.SignMessage"),
-                index: 6,
+                index: 5,
                 icon: "pen_line",
                 url: "/sign-message"
             },
             {
                 text: t("common.actionBar.VerifyMessage"),
-                index: 7,
+                index: 6,
                 icon: "shield_check",
                 url: "/verify-message"
             },
             {
                 text: t("common.actionBar.BackupWallet"),
-                index: 8,
+                index: 7,
                 icon: "download",
                 url: "/backup"
             },
             {
                 text: t("common.actionBar.Documentation"),
-                index: 9,
+                index: 8,
                 icon: "book_open",
                 url: null
             },
             {
                 text: t("common.actionBar.Settings"),
-                index: 10,
+                index: 9,
                 icon: "settings",
                 url: "/settings"
             },
             {
                 text: t("common.actionBar.changeNodes"),
-                index: 11,
+                index: 10,
                 icon: "lan",
                 url: "/nodes"
             },
             {
                 text: t("common.actionBar.Logout"),
-                index: 12,
+                index: 11,
                 icon: "logout",
                 url: "/"
             }
@@ -139,19 +132,21 @@
     function onChange(data) {
         lastIndex.value = data.index;
 
-        if (data.index === 9) {
+        // Dispatch on the icon key, not the position, so reordering the menu
+        // cannot point Documentation or Logout at the wrong item
+        if (data.icon === 'book_open') {
             window.electron.createDoc({ page: 'index' });
             return;
         }
 
-        if (data.index === 12) {
+        if (data.icon === 'logout') {
             console.log("User logged out.");
             walletStore.logout();
             router.replace("/");
         }
 
-        if (items.value[data.index].url) {
-            router.replace(items.value[data.index].url);
+        if (data.url) {
+            router.replace(data.url);
         }
     }
 

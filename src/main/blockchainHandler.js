@@ -3,13 +3,10 @@ import path from 'path';
 import { validateSender } from './securityGuards.js';
 import { BTS_FAMILY, VAULTA_FAMILY, HIVE_FAMILY } from '../lib/blockchains/chainFamilies.js';
 import * as Actions from '../lib/Actions.js';
-import { SAFE_DOMAINS } from './constants.js';
+import { SAFE_DOMAINS, MAX_JSON_UPLOAD_SIZE, MAX_BACKUP_FILE_SIZE } from './constants.js';
 import { inject } from '../lib/inject.js';
 import { decrypt } from '../lib/crypto.js';
-import { decryptTOTP } from '../lib/totp-crypto.js';
 import { v4 as uuidv4 } from 'uuid';
-import { bytesToHex } from '@noble/hashes/utils.js';
-import { sha512 } from '@noble/hashes/sha2.js';
 import { PrivateKey } from '../lib/blockchains/bitshares/library/index.js';
 import { storePendingKey } from './sessionManager.js';
 import getBlockchainAPIImport from '../lib/blockchains/blockchainFactory.js';
@@ -90,11 +87,10 @@ export async function readFileSecure(filePath) {
 }
 
 /**
- * Parses and validates a blockchain request from a deep link, QR code,
- * or local file upload.
+ * Parses and validates a blockchain request from an uploaded JSON file.
  *
  * This function performs multi-layered validation:
- *   1. Decodes and decrypts the request (for TOTP-protected links)
+ *   1. Parses the JSON request envelope
  *   2. Validates the request format (id, payload, chain, method)
  *   3. Verifies the chain matches the expected blockchain
  *   4. Checks the method is in the global Actions allowlist
@@ -102,85 +98,30 @@ export async function readFileSecure(filePath) {
  *   6. Checks the method is authorized by the user's settings
  *   7. For INJECTED_CALL methods, validates individual operations
  *
- * TOTP-type requests are decrypted using {@link module:totp-crypto.decryptTOTP}
- * (XChaCha20-Poly1305 with a SHA-256 derived key), not the wallet's
- * Argon2id-based engine. See `src/lib/totp-crypto.js` for the wire format.
- *
- * @param {string} requestContent - The raw request content (base64, URL-encoded,
- *   or JSON string depending on type).
- * @param {string} type - The request format: `'totp'` (encrypted), `'raw'`
- *   (URL-encoded JSON), or `'local'`/other (plain JSON).
+ * @param {string} requestContent - The request envelope as a JSON string.
  * @param {string} chain - The expected blockchain identifier.
  * @param {object} blockchain - The blockchain API instance (used for
  *   transaction parsing in INJECTED_CALL validation).
  * @param {string[]} blockchainActions - Actions supported by this blockchain.
  * @param {string[]|null} settingsRows - User-authorized operations from
  *   settings, or null if no restrictions.
- * @param {string|null} currentCode - The TOTP code for decrypting TOTP-type
- *   requests. Only used when type is 'totp'.
- * @returns {Promise<{id: string, type: string, payload: object}|undefined>}
+ * @param {function(string): void} [onReject] - Called with a reason code
+ *   (`invalidJson`, `invalidFormat`, `wrongChain`, `unsupportedMethod`,
+ *   `invalidTransaction`, `outsideScope`) when validation fails.
+ * @returns {Promise<{id: string, requestId: string, type: string, payload: object}|undefined>}
  *   The parsed and validated request object, or undefined if validation fails.
+ *   `id` is a fresh UUID minted here and used for popup/IPC channel names;
+ *   the sender's own `request.id` is kept as `requestId` and never reaches
+ *   a channel name.
  */
-export async function parseDeeplink(requestContent, type, chain, blockchain, blockchainActions, settingsRows, currentCode) {
-    let processedRequest;
-    let parsedRequest;
+export async function parseRequest(requestContent, chain, blockchain, blockchainActions, settingsRows, onReject = () => {}) {
     let request;
-
-    if (type === 'totp') {
-        try {
-            processedRequest = decodeURIComponent(requestContent);
-        } catch (error) {
-            console.log('Processing request failed');
-            return;
-        }
-
-        try {
-            parsedRequest = Buffer.from(processedRequest, 'base64').toString('utf-8');
-        } catch (error) {
-            console.log({
-                msg: 'Parsing request failed',
-                error,
-                processedRequest,
-                requestContent,
-            });
-            return;
-        }
-
-        let decryptedData;
-        try {
-            decryptedData = decryptTOTP(parsedRequest, currentCode);
-        } catch (error) {
-            console.log({ msg: 'TOTP decryption failed', error: error.message });
-            return;
-        }
-
-        try {
-            request = JSON.parse(decryptedData);
-        } catch (error) {
-            console.log(error);
-            return;
-        }
-    } else if (type === 'raw') {
-        try {
-            processedRequest = decodeURIComponent(requestContent);
-        } catch (error) {
-            console.log('Processing request failed');
-            return;
-        }
-
-        try {
-            request = JSON.parse(processedRequest);
-        } catch (error) {
-            console.log(error);
-            return;
-        }
-    } else {
-        try {
-            request = JSON.parse(requestContent);
-        } catch (error) {
-            console.log(error);
-            return;
-        }
+    try {
+        request = JSON.parse(requestContent);
+    } catch (error) {
+        console.log(error);
+        onReject('invalidJson');
+        return;
     }
 
     if (
@@ -193,11 +134,13 @@ export async function parseDeeplink(requestContent, type, chain, blockchain, blo
             !request.payload.params)
     ) {
         console.log('invalid request format');
+        onReject('invalidFormat');
         return;
     }
 
     if (chain !== request.payload.chain) {
-        console.log('Incoming deeplink request for wrong chain');
+        console.log('Incoming request for wrong chain');
+        onReject('wrongChain');
         return;
     }
 
@@ -207,6 +150,7 @@ export async function parseDeeplink(requestContent, type, chain, blockchain, blo
             .includes(request.payload.method)
     ) {
         console.log('Unsupported request type rejected');
+        onReject('unsupportedMethod');
         return;
     }
 
@@ -215,6 +159,7 @@ export async function parseDeeplink(requestContent, type, chain, blockchain, blo
             msg: 'Unsupported request type rejected',
             request,
         });
+        onReject('unsupportedMethod');
         return;
     }
 
@@ -228,6 +173,10 @@ export async function parseDeeplink(requestContent, type, chain, blockchain, blo
                 );
             } catch (error) {
                 console.log(error);
+            }
+            if (!tr) {
+                onReject('invalidTransaction');
+                return;
             }
             if (tr) {
                 for (let i = 0; i < tr.operations.length; i++) {
@@ -256,13 +205,14 @@ export async function parseDeeplink(requestContent, type, chain, blockchain, blo
                         const isPlaceholderSigner = firstAuth
                             && String(firstAuth.actor) === '............1';
 
+                        const nodeUrl = _chainNodes[chain];
                         if (!isPlaceholderSigner && blockchain && nodeUrl) {
                             try {
                                 esrResolved = await resolveEsrRequest(
                                     esrRequest, chain, nodeUrl, blockchain
                                 );
                             } catch (resolveErr) {
-                                console.log({ error: resolveErr, location: 'parseDeeplink.esr.resolve' });
+                                console.log({ error: resolveErr, location: 'parseRequest.esr.resolve' });
                             }
                         }
 
@@ -285,7 +235,8 @@ export async function parseDeeplink(requestContent, type, chain, blockchain, blo
                             : '';
                         request._encoding = 'esr';
                     } catch (error) {
-                        console.log({ error, location: 'parseDeeplink.esr.decode' });
+                        console.log({ error, location: 'parseRequest.esr.decode' });
+                        onReject('invalidTransaction');
                         return;
                     }
                 } else {
@@ -302,7 +253,8 @@ export async function parseDeeplink(requestContent, type, chain, blockchain, blo
                             request._nullJson = true;
                         }
                     } catch (error) {
-                        console.log({ error, location: '_parseDeeplink.VAULTA.parse' });
+                        console.log({ error, location: 'parseRequest.VAULTA.parse' });
+                        onReject('invalidTransaction');
                         return;
                     }
                 }
@@ -336,7 +288,8 @@ export async function parseDeeplink(requestContent, type, chain, blockchain, blo
                     const parsed = JSON.parse(request.payload.params[1]);
                     operations = parsed.operations || parsed.actions;
                 } catch (error) {
-                    console.log({ error, location: '_parseDeeplink.HIVE.parse' });
+                    console.log({ error, location: 'parseRequest.HIVE.parse' });
+                    onReject('invalidTransaction');
                     return;
                 }
 
@@ -356,15 +309,17 @@ export async function parseDeeplink(requestContent, type, chain, blockchain, blo
 
         if (!authorizedUse) {
             console.log(
-                `Unauthorized use of deeplinked ${chain} blockchain operation`
+                `Unauthorized use of ${chain} blockchain operation`
             );
+            onReject('outsideScope');
             return;
         }
-        console.log('Authorized use of deeplinks');
+        console.log('Authorized request');
     }
 
     return {
-        id: request.id,
+        id: uuidv4(),
+        requestId: String(request.id),
         type: request.payload.method,
         payload: request.payload,
     };
@@ -380,7 +335,6 @@ export async function parseDeeplink(requestContent, type, chain, blockchain, blo
  * Supported methods:
  *   - `calculateFee` — Calculate transaction fee
  *   - `supportsLocal` — Check if local signing is supported
- *   - `supportsTOTP` — Check if TOTP deep links are supported
  *   - `supportsQR` — Check if QR code processing is supported
  *   - `supportsWeb` — Check if web-based signing is supported
  *   - `getBalances` — Fetch account balances
@@ -391,10 +345,8 @@ export async function parseDeeplink(requestContent, type, chain, blockchain, blo
  *   - `getImportOptions` — Get key import options
  *   - `getOperationTypes` — Get supported operation types
  *   - `broadcastTransaction` — Broadcast a signed transaction
- *   - `totpCode` — Generate a TOTP verification code
- *   - `totpDeeplink` — Process a TOTP-protected deep link
- *   - `getRawLink` — Process a raw deep link
  *   - `localFileUpload` — Process a local .bin file upload
+ *   - `getRawLink` — Process a raw deep link (rawbeetvault://)
  *   - `processQR` — Process a QR code scan
  *   - `verifyAccount` — Verify account keys match
  *   - `verifyCloudAccount` — Verify cloud-backed account keys
@@ -409,18 +361,15 @@ export async function parseDeeplink(requestContent, type, chain, blockchain, blo
  * @param {string} [arg.node] - Custom RPC node URL to use.
  * @param {object} [arg.operation] - Operation data for fee/broadcast methods.
  * @param {object} [arg.request] - Request data for verifyMessage.
- * @param {string} [arg.requestContent] - Raw deep link content for TOTP methods.
- * @param {string} [arg.requestBody] - Raw deep link body for getRawLink.
- * @param {string} [arg.currentCode] - TOTP code for decryption.
  * @param {string[]} [arg.allowedOperations] - User-authorized operations.
  * @param {string} [arg.qrChoice] - QR browser choice.
  * @param {string} [arg.qrData] - QR code data string.
  * @param {string} [arg.fileData] - File content for local upload.
+ * @param {string} [arg.requestBody] - URL-encoded request envelope from a raw deep link.
  * @param {string} [arg.filePath] - File path for backup decryption.
  * @param {string} [arg.pass] - Password for backup/cloud account verification.
  * @param {boolean} [arg.legacy] - Whether to use legacy key derivation.
  * @param {string[]} [arg.authorities] - Key authorities for verification.
- * @param {string} [arg.timestamp] - Timestamp for TOTP code generation.
  * @returns {Promise<object>} Response object containing the results of
  *   all requested methods.
  */
@@ -471,10 +420,6 @@ export async function handleBlockchainRequest(event, arg) {
 
     if (methods.includes('supportsLocal')) {
         responses['supportsLocal'] = blockchain.supportsLocal();
-    }
-
-    if (methods.includes('supportsTOTP')) {
-        responses['supportsTOTP'] = blockchain.supportsTOTP();
     }
 
     if (methods.includes('supportsQR')) {
@@ -587,118 +532,25 @@ export async function handleBlockchainRequest(event, arg) {
         }
     }
 
-    if (methods.includes('totpCode')) {
-        const { timestamp } = arg;
-        const msg = uuidv4();
-        let shaMSG = bytesToHex(sha512(new TextEncoder().encode(msg + timestamp)))
-            .substring(0, 15);
-        responses['code'] = shaMSG;
-    }
-
-    if (methods.includes('totpDeeplink')) {
-        const { requestContent, currentCode, allowedOperations } = arg;
-
-        let apiobj;
-        try {
-            apiobj = await parseDeeplink(
-                requestContent,
-                'totp',
-                chain,
-                blockchain,
-                blockchainActions,
-                allowedOperations,
-                currentCode
-            );
-        } catch (error) {
-            console.log(error);
-        }
-
-        if (apiobj && apiobj.type === Actions.INJECTED_CALL) {
-            const win = getMainWindow ? getMainWindow() : null;
-            let status;
-            try {
-                status = await inject(
-                    blockchain,
-                    apiobj,
-                    win ? win.webContents : null,
-                    allowedOperations,
-                    account
-                );
-            } catch (error) {
-                console.log({ error: error || 'No status' });
-            }
-
-            if (
-                status &&
-                status.result &&
-                !status.result.isError &&
-                !status.result.canceled
-            ) {
-                responses['getRawLink'] = status.result;
-            }
-        }
-    }
-
-    if (methods.includes('getRawLink')) {
-        const { requestBody, allowedOperations } = arg;
-
-        let apiobj;
-        try {
-            apiobj = await parseDeeplink(
-                requestBody,
-                'raw',
-                chain,
-                blockchain,
-                blockchainActions,
-                allowedOperations
-            );
-        } catch (error) {
-            console.log({ error, location: '_parseDeeplink' });
-        }
-
-        if (apiobj && apiobj.type === Actions.INJECTED_CALL) {
-            const win = getMainWindow ? getMainWindow() : null;
-            let status;
-            try {
-                status = await inject(
-                    blockchain,
-                    apiobj,
-                    win ? win.webContents : null,
-                    allowedOperations,
-                    account
-                );
-            } catch (error) {
-                console.log({ error: error || 'No status' });
-            }
-
-            if (
-                status &&
-                status.result &&
-                !status.result.isError &&
-                !status.result.canceled
-            ) {
-                responses['getRawLink'] = status.result;
-            }
-        }
-    }
-
     if (methods.includes('localFileUpload')) {
         const { allowedOperations, fileData } = arg;
         try {
             let apiobj;
-            try {
-                apiobj = await parseDeeplink(
-                    fileData,
-                    'local',
-                    chain,
-                    blockchain,
-                    blockchainActions,
-                    allowedOperations,
-                    null,
-                    true
-                );
-            } catch (error) {
-                console.log(error);
+            if (typeof fileData !== 'string' || fileData.length > MAX_JSON_UPLOAD_SIZE) {
+                responses['localFileUploadError'] = 'tooLarge';
+            } else {
+                try {
+                    apiobj = await parseRequest(
+                        fileData,
+                        chain,
+                        blockchain,
+                        blockchainActions,
+                        allowedOperations,
+                        (reason) => { responses['localFileUploadError'] = reason; }
+                    );
+                } catch (error) {
+                    console.log(error);
+                }
             }
 
             if (apiobj && apiobj.type === Actions.INJECTED_CALL) {
@@ -723,10 +575,70 @@ export async function handleBlockchainRequest(event, arg) {
                     !status.result.canceled
                 ) {
                     responses['localFileUpload'] = status.result;
+                } else {
+                    // Declined by the user, or signing/broadcast failed (which shows its own error popup)
+                    responses['localFileUploadError'] = 'notCompleted';
                 }
             }
         } catch (error) {
             console.log({ error });
+        }
+    }
+
+    if (methods.includes('getRawLink')) {
+        const { requestBody, allowedOperations } = arg;
+
+        // The query string is already decoded once in the main process; links
+        // that were URL-encoded twice still need a second pass.
+        let requestContent;
+        if (typeof requestBody === 'string' && requestBody.trimStart().startsWith('{')) {
+            requestContent = requestBody;
+        } else {
+            try {
+                requestContent = decodeURIComponent(requestBody);
+            } catch (error) {
+                console.log({ error, location: 'getRawLink.decode' });
+            }
+        }
+
+        let apiobj;
+        if (typeof requestContent === 'string') {
+            try {
+                apiobj = await parseRequest(
+                    requestContent,
+                    chain,
+                    blockchain,
+                    blockchainActions,
+                    allowedOperations
+                );
+            } catch (error) {
+                console.log({ error, location: 'getRawLink.parse' });
+            }
+        }
+
+        if (apiobj && apiobj.type === Actions.INJECTED_CALL) {
+            const win = getMainWindow ? getMainWindow() : null;
+            let status;
+            try {
+                status = await inject(
+                    blockchain,
+                    apiobj,
+                    win ? win.webContents : null,
+                    allowedOperations,
+                    account
+                );
+            } catch (error) {
+                console.log({ error: error || 'No status' });
+            }
+
+            if (
+                status &&
+                status.result &&
+                !status.result.isError &&
+                !status.result.canceled
+            ) {
+                responses['getRawLink'] = status.result;
+            }
         }
     }
 

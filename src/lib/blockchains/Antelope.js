@@ -456,14 +456,6 @@ export default class Antelope extends BlockchainAPI {
     }
 
     /**
-     * Placeholder for blockchain TOTP implementation
-     * @returns Boolean
-     */
-    supportsTOTP() {
-        return true;
-    }
-
-    /**
      * Placeholder for blockchain QR implementation
      * @returns Boolean
      */

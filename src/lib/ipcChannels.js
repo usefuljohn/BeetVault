@@ -55,27 +55,28 @@ export const INVOKE_CHANNELS = Object.freeze([
 export const LISTEN_CHANNELS = Object.freeze([
     'resetTimer',
     'setNode',
-    'rawdeeplink',
-    'deeplink',
     'injectedCall',
     'getSafeAccount',
     'forceLogout',
+    'rawdeeplink',
+    'cryptoSlowPath',
 ]);
 
-// Dynamic channels (contain user-generated UUIDs)
-// These are validated via regex patterns
-const UUID_PATTERN = '[a-f0-9\\-]{36}';
+// Dynamic channels (contain UUIDs minted in the main process)
+// These are validated via regex patterns. Request ids supplied by dApps never
+// appear in channel names; parseRequest replaces them with a fresh UUID.
+const ID_PATTERN = '[a-f0-9\\-]{36}';
 
 export const DYNAMIC_SEND_PATTERNS = Object.freeze([
-    new RegExp(`^get:prompt:${UUID_PATTERN}$`),
-    new RegExp(`^get:receipt:${UUID_PATTERN}$`),
-    new RegExp(`^get:error:${UUID_PATTERN}$`),
+    new RegExp(`^get:prompt:${ID_PATTERN}$`),
+    new RegExp(`^get:receipt:${ID_PATTERN}$`),
+    new RegExp(`^get:error:${ID_PATTERN}$`),
 ]);
 
 export const DYNAMIC_LISTEN_PATTERNS = Object.freeze([
-    new RegExp(`^popupApproved_${UUID_PATTERN}$`),
-    new RegExp(`^popupRejected_${UUID_PATTERN}$`),
-    new RegExp(`^respond:prompt:${UUID_PATTERN}$`),
-    new RegExp(`^respond:receipt:${UUID_PATTERN}$`),
-    new RegExp(`^respond:error:${UUID_PATTERN}$`),
+    new RegExp(`^popupApproved_${ID_PATTERN}$`),
+    new RegExp(`^popupRejected_${ID_PATTERN}$`),
+    new RegExp(`^respond:prompt:${ID_PATTERN}$`),
+    new RegExp(`^respond:receipt:${ID_PATTERN}$`),
+    new RegExp(`^respond:error:${ID_PATTERN}$`),
 ]);

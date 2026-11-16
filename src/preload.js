@@ -33,13 +33,6 @@ contextBridge.exposeInMainWorld('electron', {
     // Backup and restore functionality
     downloadBackup: async (backupData) => safeSend('downloadBackup', backupData),
     restore: async (args) => safeInvoke('restore', args),
-    // Listening for raw/totp deeplink triggers
-    onRawDeepLink: (func) => {
-        safeOn('rawdeeplink', func);
-    },
-    onDeepLink: (func) => {
-        safeOn('deeplink', func);
-    },
     // Creating popups for prompts and receipts
     createPopup: async (popupData) => safeSend('createPopup', popupData),
     popupApproved: (id, func) => {
@@ -52,7 +45,15 @@ contextBridge.exposeInMainWorld('electron', {
     createError: async (errorData) => safeSend('createError', errorData),
     createDoc: async (docData) => safeSend('createDoc', docData),
     sendError: async (errorData) => safeSend('sendError', errorData),
-    // Handling injected calls (used by deeplink/QR/TOTP flows via inject.js)
+    // Listening for raw deeplink triggers (rawbeetvault://)
+    onRawDeepLink: (func) => {
+        safeOn('rawdeeplink', func);
+    },
+    // Warning that Argon2id fell back to the main process (worker failed to load)
+    onCryptoSlowPath: (func) => {
+        safeOn('cryptoSlowPath', func);
+    },
+    // Handling injected calls (used by JSON file/QR/raw deeplink flows via inject.js)
     onInjectedCall: async (func) => {
         safeOn('injectedCall', func);
     },

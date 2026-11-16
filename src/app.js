@@ -43,6 +43,18 @@ window.addEventListener("unhandledrejection", (e) => {
 
 app.use(i18n);
 
+// Raw deeplinks are only processed on the Raw Deeplink page, which swaps in
+// its own listener while mounted. Until then, tell the user where to go
+// instead of dropping the link silently.
+window.electron.onRawDeepLink(() => {
+  window.electron.notify(i18n.global.t("common.raw.promptFailure"));
+});
+
+// Shown once per session if Argon2id had to run in the main process
+window.electron.onCryptoSlowPath(() => {
+  window.electron.notify(i18n.global.t("common.crypto.slowPath"));
+});
+
 app.use(router);
 app.use(pinia);
 useSettingsStore().loadSettings();

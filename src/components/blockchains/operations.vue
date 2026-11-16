@@ -80,9 +80,9 @@
 
 <template>
     <div class="space-y-3 p-2">
-        <p class="mb-0">{{ t('common.totp.prompt') }}</p>
+        <p class="mb-0">{{ t('common.operations.scopePrompt') }}</p>
         <p v-if="!props.ops || !props.ops.length" class="mt-2">
-            {{ t('common.totp.unsupported') }}
+            {{ t('common.operations.scopeUnsupported') }}
         </p>
         <ScrollArea v-else class="h-60 w-full rounded-md border">
             <Table>
@@ -132,7 +132,7 @@
                 {{ t('common.qr.back') }}
             </Button>
             <Button @click="saveRows">
-                {{ t('common.totp.save') }}
+                {{ t('common.operations.scopeSave') }}
             </Button>
         </div>
     </div>

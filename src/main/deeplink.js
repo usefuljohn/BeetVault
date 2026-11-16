@@ -3,70 +3,75 @@ import path from 'path';
 import { app } from 'electron';
 
 /**
- * Handles the `second-instance` event on Windows/Linux when a user
- * clicks a protocol link (e.g., `beeteos://...`) while the app is
- * already running.
+ * URL scheme BeetVault registers for raw deep links.
  *
- * This function:
- *   1. Restores and focuses the main window
- *   2. Extracts the deep link URL from the argv array
- *   3. Validates the scheme prefix (beeteos://, rawbeeteos://, etc.)
- *   4. Parses the query string parameters
- *   5. Sends the parsed data to the renderer via IPC
+ * Only BeetVault's own `rawbeetvault` scheme is claimed. The `beeteos` and
+ * `rawbeeteos` schemes belong to other Beet-family wallets and stay released
+ * (see `legacyProtocols.js`).
  *
- * @param {Electron.BrowserWindow|null} mainWindow - The main application
- *   window. If null or destroyed, the function logs an error and returns.
- * @param {string[]} argv - Command-line arguments from the second instance.
- *   Typically contains the deep link URL as one of the arguments.
+ * @type {string}
+ */
+export const DEEPLINK_SCHEME = 'rawbeetvault';
+
+/**
+ * Prefix every accepted deep link must start with.
+ * @type {string}
+ * @private
+ */
+const DEEPLINK_PREFIX = `${DEEPLINK_SCHEME}://api/`;
+
+/**
+ * Maximum accepted length of the query portion of a deep link.
+ * @type {number}
+ * @private
+ */
+const MAX_DEEPLINK_LENGTH = 4096;
+
+/**
+ * Registers BeetVault as the default handler for `rawbeetvault://` links.
+ *
+ * On Windows/Linux in development (unpackaged), the protocol is registered
+ * with the current executable path and the launch script path so the link
+ * reaches this app rather than the bare Electron binary.
+ *
  * @returns {void}
  */
-export function handleSecondInstance(mainWindow, argv) {
-    if (!mainWindow) {
+export function registerDeeplinkProtocol() {
+    try {
+        if (process.defaultApp && process.argv[1]) {
+            app.setAsDefaultProtocolClient(DEEPLINK_SCHEME, process.execPath, [
+                path.resolve(process.argv[1]),
+            ]);
+        } else {
+            app.setAsDefaultProtocolClient(DEEPLINK_SCHEME);
+        }
+    } catch (error) {
+        console.log({ error, location: 'registerDeeplinkProtocol' });
+    }
+}
+
+/**
+ * Validates a deep link URL and forwards its parsed query string to the
+ * renderer on the `rawdeeplink` channel.
+ *
+ * @param {Electron.BrowserWindow|null} mainWindow - The main application window.
+ * @param {string} url - The full deep link (e.g. `rawbeetvault://api/?request=...`).
+ * @returns {void}
+ * @private
+ */
+function forwardDeeplink(mainWindow, url) {
+    if (!mainWindow || mainWindow.isDestroyed()) {
         console.error('Main window is not defined.');
         return;
     }
 
-    if (mainWindow.isMinimized()) {
-        mainWindow.restore();
-    }
-
-    mainWindow.focus();
-
-    let deeplink;
-    try {
-        deeplink = argv.find(
-            (arg) =>
-                typeof arg === 'string' &&
-                (arg.startsWith('beeteos://') ||
-                    arg.startsWith('rawbeeteos://') ||
-                    arg.startsWith('beetvault://') ||
-                    arg.startsWith('rawbeetvault://'))
-        );
-    } catch (error) {
-        console.log(error);
-        return;
-    }
-
-    if (!deeplink) {
-        console.log('No deep link found in argv');
-        return;
-    }
-
-    const schemePrefix = deeplink.startsWith('rawbeeteos://')
-        ? 'rawbeeteos://api/'
-        : deeplink.startsWith('rawbeetvault://')
-        ? 'rawbeetvault://api/'
-        : deeplink.startsWith('beetvault://')
-        ? 'beetvault://api/'
-        : 'beeteos://api/';
-
-    if (!deeplink.includes(schemePrefix)) {
+    if (typeof url !== 'string' || !url.startsWith(DEEPLINK_PREFIX)) {
         console.log('Invalid deep link format');
         return;
     }
 
-    let deeplinkingUrl = deeplink.split(schemePrefix)[1];
-    if (!deeplinkingUrl || deeplinkingUrl.length > 4096) {
+    const deeplinkingUrl = url.slice(DEEPLINK_PREFIX.length);
+    if (!deeplinkingUrl || deeplinkingUrl.length > MAX_DEEPLINK_LENGTH) {
         console.log('Deep link URL missing or too long');
         return;
     }
@@ -79,54 +84,51 @@ export function handleSecondInstance(mainWindow, argv) {
         return;
     }
 
-    if (qs && mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send(
-            deeplink.includes('raw') ? 'rawdeeplink' : 'deeplink',
-            qs
-        );
+    if (qs) {
+        mainWindow.webContents.send('rawdeeplink', qs);
     }
 }
 
 /**
- * Handles the `open-url` event on macOS when a user clicks a protocol
- * link (e.g., `beeteos://...`) while the app is running or being launched.
+ * Handles the `second-instance` event on Windows/Linux, which fires when
+ * a `rawbeetvault://` link is opened while BeetVault is already running.
  *
- * On macOS, Electron delivers deep links via the `open-url` event rather
- * than via `second-instance`. This function:
- *   1. Determines whether the link is a raw or standard deep link
- *   2. Strips the scheme prefix to extract the query string
- *   3. Parses the query string parameters
- *   4. Sends the parsed data to the renderer via IPC
+ * Restores and focuses the main window, then forwards the deep link
+ * (if present in argv) to the renderer.
  *
- * @param {Electron.BrowserWindow|null} mainWindow - The main application
- *   window. If null or destroyed, the function logs an error and returns.
- * @param {string} urlString - The full deep link URL string
- *   (e.g., `beeteos://api/?method=transfer&chain=bitshares`).
+ * @param {Electron.BrowserWindow|null} mainWindow - The main application window.
+ * @param {string[]} argv - Command-line arguments from the second instance.
+ * @returns {void}
+ */
+export function handleSecondInstance(mainWindow, argv) {
+    if (!mainWindow || mainWindow.isDestroyed()) {
+        return;
+    }
+
+    if (mainWindow.isMinimized()) {
+        mainWindow.restore();
+    }
+    mainWindow.focus();
+
+    const deeplink = Array.isArray(argv)
+        ? argv.find((arg) => typeof arg === 'string' && arg.startsWith(`${DEEPLINK_SCHEME}://`))
+        : undefined;
+
+    if (!deeplink) {
+        return;
+    }
+
+    forwardDeeplink(mainWindow, deeplink);
+}
+
+/**
+ * Handles the `open-url` event on macOS, which is how the OS delivers
+ * `rawbeetvault://` links to a running app.
+ *
+ * @param {Electron.BrowserWindow|null} mainWindow - The main application window.
+ * @param {string} urlString - The full deep link URL.
  * @returns {void}
  */
 export function handleOpenUrl(mainWindow, urlString) {
-    if (!mainWindow) {
-        console.error('Main window is not defined.');
-        return;
-    }
-
-    let urlType = urlString.includes('raw') ? 'rawdeeplink' : 'deeplink';
-
-    let deeplinkingUrl = urlString
-        .replace(/rawbeeteos:\/\/api\//, '')
-        .replace(/rawbeetvault:\/\/api\//, '')
-        .replace(/beetvault:\/\/api\//, '')
-        .replace(/beeteos:\/\/api\//, '');
-
-    let qs;
-    try {
-        qs = queryString.parse(deeplinkingUrl);
-    } catch (error) {
-        console.log(error);
-        return;
-    }
-
-    if (qs && mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send(urlType, qs);
-    }
+    forwardDeeplink(mainWindow, urlString);
 }

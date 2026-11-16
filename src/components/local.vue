@@ -13,6 +13,7 @@ import Operations from "./blockchains/operations";
     import { useSettingsStore } from "@/stores/settingsStore.js";
     import { usePopupStore } from "@/stores/popupStore.js";
     import { blockchainRequest } from '@/lib/blockchainRequestHelper.js';
+    import { MAX_JSON_UPLOAD_SIZE } from '@/lib/limits.js';
 import router from "../router/index.js";
 
     const { t } = useI18n({ useScope: "global" });
@@ -110,6 +111,13 @@ async function onFileUpload(a) {
         return;
     }
 
+    if (files[0].size > MAX_JSON_UPLOAD_SIZE) {
+        a.target.value = "";
+        inProgress.value = false;
+        window.electron.notify(t("common.local.errors.tooLarge"));
+        return;
+    }
+
     let account = accountStore.getCurrentSafeAccount();
     if (!account) {
         console.log("No account selected");
@@ -120,6 +128,8 @@ async function onFileUpload(a) {
     let fileContent;
     try {
         fileContent = await files[0].text();
+        // Allow re-selecting the same file after it has been regenerated
+        a.target.value = "";
     } catch (error) {
         console.log({ error });
         inProgress.value = false;
@@ -148,7 +158,10 @@ async function onFileUpload(a) {
             blockchainResponse,
         });
         inProgress.value = false;
-        window.electron.notify(t("common.local.promptFailure"));
+        const reason = blockchainResponse?.localFileUploadError;
+        window.electron.notify(
+            reason ? t(`common.local.errors.${reason}`) : t("common.local.promptFailure")
+        );
         return;
     }
 
@@ -171,13 +184,13 @@ onMounted(() => {
         <div v-if="supportsLocal" class="px-4 py-3 space-y-4">
             <AccountSelect :disabled="hasActivePopup" />
 
-            <div v-if="!chosenScope" class="space-y-3">
+            <div v-if="!(chosenScope && selectedRows)" class="space-y-3">
                 <p class="mb-0">{{ t("common.local.label") }}</p>
                 <p class="mb-0">{{ t("common.local.desc") }}</p>
 
                 <Card class="w-full shadow-sm border">
                     <CardContent class="space-y-4 p-4">
-                        <div v-if="!selectedRows">
+                        <div v-if="!chosenScope">
                             <p class="mb-3">{{ t("common.chosenScope.title.local") }}</p>
                             <div class="flex flex-wrap gap-2">
                                 <Button @click="setScope('Configure')">

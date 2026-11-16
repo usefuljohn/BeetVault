@@ -1,14 +1,14 @@
 <script setup>
-    import { ref, computed, watch, watchEffect, onMounted, toRaw } from 'vue';
+    import { ref, computed, watch, watchEffect, onMounted, onBeforeUnmount, toRaw } from 'vue';
     import { useI18n } from 'vue-i18n';
     import { Button } from '@/components/ui/ui/button';
     import { Card, CardContent } from '@/components/ui/ui/card';
     import { Badge } from '@/components/ui/ui/badge';
-    import { Shield, ThumbsUp, Loader2, Info } from 'lucide-vue-next';
+    import { Shield, ThumbsUp, Loader2 } from 'lucide-vue-next';
 
     import AccountSelect from "./account-select";
     import Operations from "./blockchains/operations";
-    
+
     import { useWalletStore } from '@/stores/walletStore.js';
     import { useAccountStore } from '@/stores/accountStore.js';
     import { useSettingsStore } from '@/stores/settingsStore.js';
@@ -97,9 +97,27 @@
     });
 
     let deepLinkInProgress = ref(false);
-    window.electron.onRawDeepLink(async (args) => {
+
+    async function onRawDeepLink(args) {
         if (!walletStore.isUnlocked || router.currentRoute.value.path != "/raw-link") {
-            console.log("Wallet must be unlocked for raw deeplinks to work.");
+            console.log("Wallet must be unlocked and on the raw link page for raw deeplinks to work.");
+            window.electron.notify(t("common.raw.promptFailure"));
+            return;
+        }
+
+        if (deepLinkInProgress.value) {
+            console.log("A raw deeplink is already being processed.");
+            return;
+        }
+
+        if (!chosenScope.value || !selectedRows.value) {
+            console.log("Raw deeplink scope has not been configured.");
+            window.electron.notify(t("common.raw.promptFailure"));
+            return;
+        }
+
+        if (!args || typeof args.request !== 'string') {
+            console.log("Raw deeplink is missing its request parameter.");
             window.electron.notify(t("common.raw.promptFailure"));
             return;
         }
@@ -107,10 +125,9 @@
         let account = accountStore.getCurrentSafeAccount();
         if (!account) {
             console.log('No account')
-            deepLinkInProgress.value = false;
             return;
         }
-        
+
         window.electron.resetTimer();
 
         deepLinkInProgress.value = true;
@@ -118,7 +135,7 @@
         let blockchainResponse;
         try {
             blockchainResponse = await blockchainRequest(
-                { 
+                {
                     methods: ['getRawLink'],
                     chain: account.chain,
                     requestBody: args.request,
@@ -138,11 +155,11 @@
             deepLinkInProgress.value = false;
             return;
         }
-        
+
         console.log({result: blockchainResponse.getRawLink});
         window.electron.notify(t("common.local.promptSuccess"));
         deepLinkInProgress.value = false;
-    });
+    }
 
     onMounted(() => {
         if (!walletStore.isUnlocked) {
@@ -151,6 +168,18 @@
             router.replace("/");
             return;
         }
+
+        // Replace any listener from a previous visit so each link is handled once
+        window.electron.removeAllListeners('rawdeeplink');
+        window.electron.onRawDeepLink(onRawDeepLink);
+    });
+
+    onBeforeUnmount(() => {
+        window.electron.removeAllListeners('rawdeeplink');
+        // Links opened elsewhere in the app are rejected with a hint to return here
+        window.electron.onRawDeepLink(() => {
+            window.electron.notify(t("common.raw.promptFailure"));
+        });
     });
 </script>
 
@@ -160,7 +189,7 @@
             <AccountSelect :disabled="hasActivePopup" />
 
             <div v-if="deepLinkInProgress" class="flex flex-col items-center gap-2">
-                <p class="mb-0">{{ t('common.totp.inProgress') }}</p>
+                <p class="mb-0">{{ t('common.raw.inProgress') }}</p>
                 <Card class="w-full max-w-sm shadow-sm border">
                     <CardContent class="flex flex-col items-center py-4">
                         <Loader2 class="h-6 w-6 animate-spin" />
@@ -202,7 +231,7 @@
                             <div class="flex flex-wrap gap-2">
                                 <Badge variant="secondary" class="flex items-center gap-1">
                                     <Shield class="h-3 w-3" />
-                                    {{ selectedRows ? selectedRows.length : 0 }} {{ t('common.totp.chosen') }}
+                                    {{ selectedRows ? selectedRows.length : 0 }} {{ t('common.raw.chosen') }}
                                 </Badge>
                                 <Badge variant="default" class="flex items-center gap-1">
                                     <ThumbsUp class="h-3 w-3" />
