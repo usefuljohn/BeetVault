@@ -53,6 +53,17 @@
         "AppImage"
       ],
       "executableName": "beetvault"
+    },
+    "mac": {
+      "category": "public.app-category.utilities",
+      "target": [
+        "dmg"
+      ],
+      "identity": null,
+      "icon": "resources/icons/512x512.png"
+    },
+    "dmg": {
+      "backgroundColor": "#ffffff"
     }
   },
   "scripts": {
@@ -63,7 +74,9 @@
     "release": "npm run compile && electron-builder --publish never",
     "dist:macos-latest": "npm run-script compile && electron-builder -m --publish never",
     "dist:windows-latest": "npm run-script compile && electron-builder -w --publish never",
-    "dist:ubuntu-latest": "npm run-script compile && electron-builder -l --publish never"
+    "dist:ubuntu-latest": "npm run-script compile && electron-builder -l --publish never",
+    "dist:deb": "npm run-script compile && electron-builder --linux deb --publish never",
+    "dist:appimage": "npm run-script compile && electron-builder --linux AppImage --publish never"
   },
   "dependencies": {
     "@babel/runtime": "^8.0.0",
